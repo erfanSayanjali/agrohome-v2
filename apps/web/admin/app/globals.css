@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+:root {
+  --admin-bg: #0c1a17;
+  --admin-bg-elevated: #122824;
+  --admin-surface: #16332e;
+  --admin-surface-2: #1c3f38;
+  --admin-border: rgba(255, 255, 255, 0.1);
+  --admin-border-strong: rgba(244, 193, 17, 0.35);
+  --admin-text: #f3f6f5;
+  --admin-muted: #a8b8b3;
+  --admin-accent: #f4c111;
+  --admin-accent-fg: #0f1f1c;
+  --admin-danger: #e86a5c;
+  --admin-success: #3cb371;
+  --admin-ring: rgba(244, 193, 17, 0.55);
+  --admin-radius: 12px;
+  --admin-radius-sm: 8px;
+  --admin-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
+  --admin-sidebar: 17.5rem;
+  --admin-topbar: 3.75rem;
+}
+
+@theme inline {
+  --color-admin-bg: var(--admin-bg);
+  --color-admin-surface: var(--admin-surface);
+  --color-admin-text: var(--admin-text);
+  --color-admin-muted: var(--admin-muted);
+  --color-admin-accent: var(--admin-accent);
+  --color-admin-danger: var(--admin-danger);
+  --font-sans: var(--font-vazirmatn), "Tahoma", sans-serif;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background:
+    radial-gradient(ellipse 80% 50% at 100% -10%, rgba(244, 193, 17, 0.14), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 0% 100%, rgba(34, 120, 98, 0.22), transparent 50%),
+    linear-gradient(165deg, #0a1613 0%, #12332d 48%, #0e221e 100%);
+  color: var(--admin-text);
+  font-family: var(--font-vazirmatn), "Tahoma", sans-serif;
+  /* Vazirmatn stylistic set: Latin digits → Persian glyphs (fallback alongside Unicode conversion) */
+  font-feature-settings: "ss01";
+}
+
+.tabular-nums {
+  font-feature-settings: "ss01", "tnum";
+}
+
+* {
+  box-sizing: border-box;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--admin-ring);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: rgba(244, 193, 17, 0.35);
+}
+
+@keyframes admin-nav-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) translateX(8px);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateX(0);
+    filter: blur(0);
+  }
+}
+
+.admin-nav-enter {
+  opacity: 0;
+}
+
+.admin-nav-enter-active {
+  animation: admin-nav-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-nav-enter,
+  .admin-nav-enter-active {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+}

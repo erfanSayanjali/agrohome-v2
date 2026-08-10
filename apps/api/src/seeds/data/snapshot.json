@@ -1,0 +1,999 @@
+{
+  "exportedAt": "2026-08-10T14:16:46.544Z",
+  "roles": [
+    {
+      "id": "cmsmwzvyx00002kud9f349sgj",
+      "legacyId": "admin-role",
+      "title": "مدیر کل",
+      "permissions": [],
+      "createdAt": "2026-08-10T07:33:13.497Z",
+      "updatedAt": "2026-08-10T07:33:13.497Z"
+    }
+  ],
+  "users": [
+    {
+      "id": "cmsmwzw2s00012kudahs8pxtx",
+      "legacyId": null,
+      "phone": "09120000000",
+      "firstName": "Admin",
+      "lastName": "Agrohome",
+      "nickname": null,
+      "media": null,
+      "passwordHash": "$2b$10$BB8u7R8x8Hraj0f3GD0PDeo9udyxg9j2Op7dyu05qVFbSFOU8JWg.",
+      "roleId": "cmsmwzvyx00002kud9f349sgj",
+      "createdAt": "2026-08-10T07:33:13.636Z",
+      "updatedAt": "2026-08-10T11:04:54.000Z"
+    }
+  ],
+  "productCategories": [
+    {
+      "id": "cmsna6n0d0000toud9nq7g396",
+      "legacyId": "6a646374ad0bf6c346399345",
+      "title": "خاک و بستر کشت",
+      "slug": "Potting Mix",
+      "description": "",
+      "publish": false,
+      "parentId": null,
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T13:42:23.485Z",
+      "updatedAt": "2026-08-10T13:43:39.260Z"
+    },
+    {
+      "id": "cmsna6n2s0001toudsiwx21nv",
+      "legacyId": "6a65c07bad0bf6c346399c33",
+      "title": "کود و مراقبت از گیاهان آپارتمانی",
+      "slug": "Fertilizers and Houseplant Care",
+      "description": null,
+      "publish": false,
+      "parentId": null,
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T13:42:23.572Z",
+      "updatedAt": "2026-08-10T13:42:23.572Z"
+    },
+    {
+      "id": "cmsna6n2v0002toud5sr87ffc",
+      "legacyId": "6a65c0d1ad0bf6c346399c59",
+      "title": "کود و مراقبت از گیاهان فضای باز",
+      "slug": "Fertilizers and Outdoor Plant Car",
+      "description": null,
+      "publish": false,
+      "parentId": null,
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T13:42:23.575Z",
+      "updatedAt": "2026-08-10T13:42:23.575Z"
+    },
+    {
+      "id": "cmsna6n3h0003toudcy3kj3mf",
+      "legacyId": "6a65f178ad0bf6c346399efd",
+      "title": "عمومی",
+      "slug": "universal",
+      "description": null,
+      "publish": false,
+      "parentId": "cmsna6n0d0000toud9nq7g396",
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T13:42:23.597Z",
+      "updatedAt": "2026-08-10T13:42:23.597Z"
+    },
+    {
+      "id": "cmsna6n430004toudb7n0wfdp",
+      "legacyId": "6a68b259ad0bf6c34639abce",
+      "title": "بنفشه آفریقایی",
+      "slug": "african-violet",
+      "description": null,
+      "publish": false,
+      "parentId": "cmsna6n2s0001toudsiwx21nv",
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T13:42:23.619Z",
+      "updatedAt": "2026-08-10T13:42:23.619Z"
+    },
+    {
+      "id": "cmsna6n4d0005toud98sb7hc8",
+      "legacyId": "6a68b282ad0bf6c34639abf7",
+      "title": "آگلونما",
+      "slug": "Aglonema",
+      "description": null,
+      "publish": false,
+      "parentId": "cmsna6n2s0001toudsiwx21nv",
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T13:42:23.629Z",
+      "updatedAt": "2026-08-10T13:42:23.629Z"
+    },
+    {
+      "id": "cmsna6n4n0006toud84xgjtk7",
+      "legacyId": "6a68b3f1ad0bf6c34639ac34",
+      "title": "آلوئه‌ورا",
+      "slug": "Aloevera",
+      "description": null,
+      "publish": false,
+      "parentId": "cmsna6n2s0001toudsiwx21nv",
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T13:42:23.639Z",
+      "updatedAt": "2026-08-10T13:42:23.639Z"
+    },
+    {
+      "id": "cmsna6n4p0007toudf2ol3ovk",
+      "legacyId": "6a68b483ad0bf6c34639acb3",
+      "title": "باباآدم",
+      "slug": "Alocasia",
+      "description": null,
+      "publish": false,
+      "parentId": "cmsna6n2s0001toudsiwx21nv",
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T13:42:23.641Z",
+      "updatedAt": "2026-08-10T13:42:23.641Z"
+    },
+    {
+      "id": "cmsna6n4s0008toud4ovk59k3",
+      "legacyId": "6a68b4e1ad0bf6c34639ad00",
+      "title": "آلوئه‌ورا",
+      "slug": "aloevera",
+      "description": null,
+      "publish": false,
+      "parentId": "cmsna6n2v0002toud5sr87ffc",
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T13:42:23.644Z",
+      "updatedAt": "2026-08-10T13:42:23.644Z"
+    },
+    {
+      "id": "cmsna6n570009toud9nil6p2l",
+      "legacyId": "6a6a0033ad0bf6c34639b291",
+      "title": "بامبو",
+      "slug": "bamboo",
+      "description": null,
+      "publish": false,
+      "parentId": "cmsna6n2s0001toudsiwx21nv",
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T13:42:23.659Z",
+      "updatedAt": "2026-08-10T13:42:23.659Z"
+    },
+    {
+      "id": "cmsna6n5w000atoudmb45e4l0",
+      "legacyId": "6a6f047ead0bf6c34639c51f",
+      "title": "رزماری",
+      "slug": "rosemary",
+      "description": null,
+      "publish": false,
+      "parentId": "cmsna6n2s0001toudsiwx21nv",
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T13:42:23.684Z",
+      "updatedAt": "2026-08-10T13:42:23.684Z"
+    },
+    {
+      "id": "cmsna6n6n000btoud34magjla",
+      "legacyId": "6a6f04cdad0bf6c34639c550",
+      "title": "تکوما",
+      "slug": "tecoma",
+      "description": null,
+      "publish": false,
+      "parentId": "cmsna6n2s0001toudsiwx21nv",
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T13:42:23.711Z",
+      "updatedAt": "2026-08-10T13:42:23.711Z"
+    },
+    {
+      "id": "cmsna6n6r000ctoud5ia6oda5",
+      "legacyId": "6a6f0534ad0bf6c34639c588",
+      "title": "بنجامین",
+      "slug": "benjamina",
+      "description": null,
+      "publish": false,
+      "parentId": "cmsna6n2s0001toudsiwx21nv",
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T13:42:23.715Z",
+      "updatedAt": "2026-08-10T13:42:23.715Z"
+    },
+    {
+      "id": "cmsna6n6u000dtouddx6ayoju",
+      "legacyId": "6a6f05f1ad0bf6c34639c5bc",
+      "title": "آنتوریوم",
+      "slug": "anthorium",
+      "description": null,
+      "publish": false,
+      "parentId": "cmsna6n2s0001toudsiwx21nv",
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T13:42:23.718Z",
+      "updatedAt": "2026-08-10T13:42:23.718Z"
+    },
+    {
+      "id": "cmsna6n6w000etoudpjeswvuv",
+      "legacyId": "6a6f061cad0bf6c34639c5e5",
+      "title": "گل کاغذی",
+      "slug": "bougainvillea",
+      "description": null,
+      "publish": false,
+      "parentId": "cmsna6n2s0001toudsiwx21nv",
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T13:42:23.720Z",
+      "updatedAt": "2026-08-10T13:42:23.720Z"
+    },
+    {
+      "id": "cmsna6n6z000ftoudr76tuac2",
+      "legacyId": "6a6f0655ad0bf6c34639c610",
+      "title": "دیفن باخیا",
+      "slug": "diffenbachia",
+      "description": null,
+      "publish": false,
+      "parentId": "cmsna6n2s0001toudsiwx21nv",
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T13:42:23.723Z",
+      "updatedAt": "2026-08-10T13:42:23.723Z"
+    },
+    {
+      "id": "cmsna6n71000gtoud0xa1cr6n",
+      "legacyId": "6a6f0679ad0bf6c34639c639",
+      "title": "دراسنا",
+      "slug": "drasna",
+      "description": null,
+      "publish": false,
+      "parentId": "cmsna6n2s0001toudsiwx21nv",
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T13:42:23.725Z",
+      "updatedAt": "2026-08-10T13:42:23.725Z"
+    },
+    {
+      "id": "cmsna6n73000htoudf8t6wuff",
+      "legacyId": "6a6f0696ad0bf6c34639c662",
+      "title": "سرخس",
+      "slug": "fern",
+      "description": null,
+      "publish": false,
+      "parentId": "cmsna6n2s0001toudsiwx21nv",
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T13:42:23.727Z",
+      "updatedAt": "2026-08-10T13:42:23.727Z"
+    },
+    {
+      "id": "cmsna6n74000itoudl5qyl1x2",
+      "legacyId": "6a6f06b3ad0bf6c34639c68b",
+      "title": "فیکوس",
+      "slug": "ficus",
+      "description": null,
+      "publish": false,
+      "parentId": "cmsna6n2s0001toudsiwx21nv",
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T13:42:23.728Z",
+      "updatedAt": "2026-08-10T13:42:23.728Z"
+    },
+    {
+      "id": "cmsna6n77000jtouds7dlbt6a",
+      "legacyId": "6a6f06ccad0bf6c34639c6b4",
+      "title": "یاس",
+      "slug": "jasmine",
+      "description": null,
+      "publish": false,
+      "parentId": "cmsna6n2s0001toudsiwx21nv",
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T13:42:23.731Z",
+      "updatedAt": "2026-08-10T13:42:23.731Z"
+    },
+    {
+      "id": "cmsna6n79000ktoudvu2dvyek",
+      "legacyId": "6a6f0786ad0bf6c34639c6dd",
+      "title": "لیندا",
+      "slug": "linda",
+      "description": null,
+      "publish": false,
+      "parentId": "cmsna6n2s0001toudsiwx21nv",
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T13:42:23.733Z",
+      "updatedAt": "2026-08-10T13:42:23.733Z"
+    },
+    {
+      "id": "cmsna6n7b000ltoudkb7oj51e",
+      "legacyId": "6a6f091aad0bf6c34639c706",
+      "title": "نخل بادبزنی",
+      "slug": "liquala",
+      "description": null,
+      "publish": false,
+      "parentId": "cmsna6n2s0001toudsiwx21nv",
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T13:42:23.735Z",
+      "updatedAt": "2026-08-10T13:42:23.735Z"
+    },
+    {
+      "id": "cmsna6n7e000mtoud41hvyyyl",
+      "legacyId": "6a6f0941ad0bf6c34639c72f",
+      "title": "مونسترا",
+      "slug": "monstera",
+      "description": null,
+      "publish": false,
+      "parentId": "cmsna6n2s0001toudsiwx21nv",
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T13:42:23.738Z",
+      "updatedAt": "2026-08-10T13:42:23.738Z"
+    },
+    {
+      "id": "cmsna6n7g000ntoud2v6cq58z",
+      "legacyId": "6a6f09d3ad0bf6c34639c758",
+      "title": "موچسب",
+      "slug": "parthenocissus",
+      "description": null,
+      "publish": false,
+      "parentId": "cmsna6n2s0001toudsiwx21nv",
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T13:42:23.740Z",
+      "updatedAt": "2026-08-10T13:42:23.740Z"
+    },
+    {
+      "id": "cmsna6n7i000otoudgj6ozfjz",
+      "legacyId": "6a6f0e8dad0bf6c34639c795",
+      "title": "کاج",
+      "slug": "pinus",
+      "description": null,
+      "publish": false,
+      "parentId": "cmsna6n2s0001toudsiwx21nv",
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T13:42:23.742Z",
+      "updatedAt": "2026-08-10T13:42:23.742Z"
+    },
+    {
+      "id": "cmsna6n7k000ptoudo1s2r46o",
+      "legacyId": "6a6f0ec7ad0bf6c34639c7c0",
+      "title": "پتوس",
+      "slug": "pothos",
+      "description": null,
+      "publish": false,
+      "parentId": "cmsna6n2s0001toudsiwx21nv",
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T13:42:23.744Z",
+      "updatedAt": "2026-08-10T13:42:23.744Z"
+    },
+    {
+      "id": "cmsna6n7m000qtouddzgkt2sx",
+      "legacyId": "6a6f10f7ad0bf6c34639c804",
+      "title": "انجیر چسب",
+      "slug": "pumila",
+      "description": null,
+      "publish": false,
+      "parentId": "cmsna6n2s0001toudsiwx21nv",
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T13:42:23.746Z",
+      "updatedAt": "2026-08-10T13:42:23.746Z"
+    },
+    {
+      "id": "cmsna6n7o000rtoudgree7yjq",
+      "legacyId": "6a6f117ead0bf6c34639c869",
+      "title": "سانسوریا",
+      "slug": "sansveria",
+      "description": null,
+      "publish": false,
+      "parentId": "cmsna6n2s0001toudsiwx21nv",
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T13:42:23.748Z",
+      "updatedAt": "2026-08-10T13:42:23.748Z"
+    },
+    {
+      "id": "cmsna6n7v000stoudg6atileb",
+      "legacyId": "6a6f119aad0bf6c34639c892",
+      "title": "شفلرا",
+      "slug": "scheflera",
+      "description": null,
+      "publish": false,
+      "parentId": "cmsna6n2s0001toudsiwx21nv",
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T13:42:23.755Z",
+      "updatedAt": "2026-08-10T13:42:23.755Z"
+    },
+    {
+      "id": "cmsna6n7y000ttoudo8mrc5c7",
+      "legacyId": "6a6f11bbad0bf6c34639c8bb",
+      "title": "سینگونیوم",
+      "slug": "singunium",
+      "description": null,
+      "publish": false,
+      "parentId": "cmsna6n2s0001toudsiwx21nv",
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T13:42:23.758Z",
+      "updatedAt": "2026-08-10T13:42:23.758Z"
+    },
+    {
+      "id": "cmsna6n80000utoud22qaelfq",
+      "legacyId": "6a6f120bad0bf6c34639c916",
+      "title": "تراریوم",
+      "slug": "terrarium",
+      "description": null,
+      "publish": false,
+      "parentId": "cmsna6n2s0001toudsiwx21nv",
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T13:42:23.760Z",
+      "updatedAt": "2026-08-10T13:42:23.760Z"
+    },
+    {
+      "id": "cmsna6n82000vtoudfygix4yd",
+      "legacyId": "6a6f1231ad0bf6c34639c93f",
+      "title": "زاموفیلیا",
+      "slug": "zamophylia",
+      "description": null,
+      "publish": false,
+      "parentId": "cmsna6n2s0001toudsiwx21nv",
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T13:42:23.762Z",
+      "updatedAt": "2026-08-10T13:42:23.762Z"
+    },
+    {
+      "id": "cmsna6n8j000wtoudfmkuojpx",
+      "legacyId": "6a6f292bad0bf6c34639cc42",
+      "title": "آلوئه‌ ورا",
+      "slug": "alo-evera",
+      "description": null,
+      "publish": false,
+      "parentId": "cmsna6n2s0001toudsiwx21nv",
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T13:42:23.779Z",
+      "updatedAt": "2026-08-10T13:42:23.779Z"
+    }
+  ],
+  "products": [
+    {
+      "id": "cmsnb469t000040ud8oo7qlot",
+      "legacyId": null,
+      "title": "23",
+      "slug": "2323",
+      "subtitle": null,
+      "description": null,
+      "media": {
+        "alt": "12",
+        "url": "/uploads/1786350053550-scrnli_6BwirdI5ge97Ug.png"
+      },
+      "gallery": [],
+      "isFeatured": false,
+      "status": "AVAILABLE",
+      "views": 0,
+      "sortOrder": 0,
+      "createdAt": "2026-08-10T14:08:28.097Z",
+      "updatedAt": "2026-08-10T14:11:07.529Z"
+    }
+  ],
+  "productCategoryOnProduct": [
+    {
+      "productId": "cmsnb469t000040ud8oo7qlot",
+      "categoryId": "cmsna6n4d0005toud98sb7hc8"
+    },
+    {
+      "productId": "cmsnb469t000040ud8oo7qlot",
+      "categoryId": "cmsna6n570009toud9nil6p2l"
+    }
+  ],
+  "packages": [],
+  "specifications": [],
+  "productSpecifications": [],
+  "tagCategories": [],
+  "tags": [],
+  "productTags": [],
+  "blogCategories": [
+    {
+      "id": "cmsnb8pdb000240udzds8xy0d",
+      "legacyId": null,
+      "title": "چمن و فضای سبز حیاط",
+      "slug": "fazaye-sabz-hayat",
+      "description": "",
+      "publish": true,
+      "media": null,
+      "parentId": "cmsnbaov5000440udd9namaxg",
+      "createdAt": "2026-08-10T14:11:59.471Z",
+      "updatedAt": "2026-08-10T14:13:36.009Z"
+    },
+    {
+      "id": "cmsnbaov5000440udd9namaxg",
+      "legacyId": null,
+      "title": "tutorials",
+      "slug": "آموزشی",
+      "description": null,
+      "publish": true,
+      "media": null,
+      "parentId": null,
+      "createdAt": "2026-08-10T14:13:32.129Z",
+      "updatedAt": "2026-08-10T14:13:32.129Z"
+    }
+  ],
+  "blogs": [],
+  "comments": [],
+  "cmsPages": [
+    {
+      "id": "cmsmx2ei8000170udndvfchlt",
+      "slug": "/",
+      "title": "Home",
+      "status": "published",
+      "publishedAt": "2026-08-10T13:34:22.831Z",
+      "revalidateSeconds": 600,
+      "publishedSnapshot": {
+        "blocks": [
+          {
+            "id": "cmsn4k3tw0000rkudzvhrwyff",
+            "name": "هیرو",
+            "type": "hero",
+            "anchor": null,
+            "payload": {
+              "text": "با کودهای ارگانیک ما، بدون بوی بد و مواد شیمیایی، گیاهات رو زنده کن.",
+              "image": "/homeheader.jpg",
+              "title": "از دل طبیعت، مستقیم برای گلدون تو",
+              "subtitle": "با کودهای ارگانیک ما، بدون بوی بد و مواد شیمیایی، گیاهات رو زنده کن.",
+              "primaryCta": {
+                "href": "/products",
+                "label": "درباره‌ ما"
+              },
+              "accentColor": "#B1D082",
+              "buttonColor": "#308060",
+              "titleAccent": "طبیعت",
+              "secondaryCta": {
+                "href": "/products",
+                "label": "خرید کودهای خانگی"
+              }
+            },
+            "isVisible": true,
+            "sortOrder": 0,
+            "sourceType": "STATIC"
+          },
+          {
+            "id": "cmsn4k3uu0002rkudr4bfhwe5",
+            "name": "بنر",
+            "type": "banner",
+            "anchor": null,
+            "payload": {
+              "cta": {
+                "href": "/products",
+                "label": "کودهای آپارتمانی"
+              },
+              "text": "لورم ایپــــــسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ، و با استفاده از طراحان گرافیک است!",
+              "image": "/b1.jpg",
+              "title": "زندگی سبز از تو خونه شروع می‌شه!",
+              "accentColor": "#F3CC30",
+              "titleAccent": "سبز"
+            },
+            "isVisible": true,
+            "sortOrder": 1,
+            "sourceType": "STATIC"
+          },
+          {
+            "id": "cmsn4k3u40001rkud7uhgjqe2",
+            "name": "درباره کوتاه",
+            "type": "about",
+            "anchor": null,
+            "payload": {
+              "text": "جایی که کیفیت، دوام و سلامت محیط‌زیست کنار هم جمع می‌شن. ما محصولاتمون رو با مواد کاملاً طبیعی و استانداردهای سخت‌گیرانه تولید می‌کنیم تا هم طول عمر بالایی داشته باشن، هم برای خانواده‌ت امن باشن. ترکیب تجربه‌ی سال‌ها کار تخصصی با فناوری روز، باعث شده بتونیم راهکارهایی ارائه بدیم که هم ظاهر فضای شما رو زیباتر کنه و هم کمترین آسیب رو به طبیعت بزنه.",
+              "title": "یک انتخاب سبز برای",
+              "years": 24,
+              "images": [
+                "/homeheader.jpg",
+                "/uploads/1786350053550-scrnli_6BwirdI5ge97Ug.png",
+                "/a2.png"
+              ],
+              "benefits": [
+                "محصولات 100% ارگانیک و طبیعی",
+                "بدون بو و مواد شیمیایی مضر",
+                "تضمین کیفیت و رضایت مشتری"
+              ],
+              "yearsLabel": "سال تجربه",
+              "titleAccent": "خونه‌های سبز"
+            },
+            "isVisible": true,
+            "sortOrder": 2,
+            "sourceType": "STATIC"
+          },
+          {
+            "id": "cmsn4k3yn0003rkudrpoxvf05",
+            "name": "آموزش‌ها",
+            "type": "blog_category_grid",
+            "anchor": null,
+            "payload": {
+              "limit": 6,
+              "title": "راهنمای استفاده بر اساس نوع گیاه",
+              "entity": "blog_category",
+              "eyebrow": "هر گیاهی، کود مخصوص خودش رو می‌خواد!",
+              "parentSlug": "tutorials"
+            },
+            "isVisible": true,
+            "sortOrder": 3,
+            "sourceType": "ENTITY_QUERY"
+          },
+          {
+            "id": "cmsn4k4270004rkud3xcety7y",
+            "name": "جدیدترین محصولات",
+            "type": "product_grid",
+            "anchor": null,
+            "payload": {
+              "sort": "-createdAt",
+              "limit": 10,
+              "title": "جدیدترین محصولات",
+              "entity": "product",
+              "eyebrow": "فروشگاه آگروهوم",
+              "variant": "slider",
+              "showAllHref": "/products"
+            },
+            "isVisible": true,
+            "sortOrder": 4,
+            "sourceType": "ENTITY_QUERY"
+          },
+          {
+            "id": "cmsn4k4280005rkudbv1sc0od",
+            "name": "نظرات کاربران",
+            "type": "comment_list",
+            "anchor": null,
+            "payload": {
+              "sort": "-createdAt",
+              "limit": 12,
+              "title": "نظرات و رضایت مشتریان از محصولات ما",
+              "entity": "comment"
+            },
+            "isVisible": true,
+            "sortOrder": 5,
+            "sourceType": "ENTITY_QUERY"
+          },
+          {
+            "id": "cmsn4k42a0006rkudz218z1l1",
+            "name": "سوالات متداول",
+            "type": "faq",
+            "anchor": null,
+            "payload": {
+              "items": [
+                {
+                  "title": "کودهای شما ارگانیک هستند تست؟",
+                  "content": "<p>بله، محصولات ما بر پایه مواد طبیعی و استاندارد تولید می‌شوند.</p>"
+                },
+                {
+                  "title": "چطور بهترین کود را انتخاب کنم؟",
+                  "content": "<p>با توجه به نوع گیاه از بخش آموزش‌ها راهنمایی بگیرید یا با پشتیبانی تماس بگیرید.</p>"
+                }
+              ],
+              "title": "بیشترین سوالاتی که تا الان از ما پرسیده شده ..",
+              "images": [
+                "/faq1.png",
+                "/faq2.png"
+              ],
+              "eyebrow": "سوالات متداول مشتریان"
+            },
+            "isVisible": true,
+            "sortOrder": 6,
+            "sourceType": "STATIC"
+          },
+          {
+            "id": "cmsn4k42b0007rkud7s9ixax4",
+            "name": "جدیدترین مطالب",
+            "type": "blog_list",
+            "anchor": null,
+            "payload": {
+              "sort": "-createdAt",
+              "limit": 10,
+              "title": "جدیدترین اخبار و مقالات",
+              "entity": "blog",
+              "eyebrow": "اخبار و مقالات",
+              "showAllHref": "/blogs"
+            },
+            "isVisible": true,
+            "sortOrder": 7,
+            "sourceType": "ENTITY_QUERY"
+          }
+        ]
+      },
+      "createdAt": "2026-08-10T07:35:10.832Z",
+      "updatedAt": "2026-08-10T13:34:22.843Z"
+    }
+  ],
+  "cmsRegions": [
+    {
+      "id": "cmsmwzw3u00022kudoonh4hc8",
+      "key": "footer",
+      "title": "فوتر",
+      "status": "published",
+      "publishedAt": "2026-08-10T09:49:42.229Z",
+      "revalidateSeconds": 600,
+      "publishedSnapshot": {
+        "blocks": []
+      },
+      "createdAt": "2026-08-10T07:33:13.674Z",
+      "updatedAt": "2026-08-10T09:49:42.229Z"
+    }
+  ],
+  "contentBlocks": [
+    {
+      "id": "cmsn4k3tw0000rkudzvhrwyff",
+      "ownerType": "PAGE",
+      "pageId": "cmsmx2ei8000170udndvfchlt",
+      "regionId": null,
+      "type": "hero",
+      "name": "هیرو",
+      "sortOrder": 0,
+      "isVisible": true,
+      "sourceType": "STATIC",
+      "payload": {
+        "text": "با کودهای ارگانیک ما، بدون بوی بد و مواد شیمیایی، گیاهات رو زنده کن.",
+        "image": "/homeheader.jpg",
+        "title": "از دل طبیعت، مستقیم برای گلدون تو",
+        "subtitle": "با کودهای ارگانیک ما، بدون بوی بد و مواد شیمیایی، گیاهات رو زنده کن.",
+        "primaryCta": {
+          "href": "/products",
+          "label": "درباره‌ ما"
+        },
+        "accentColor": "#B1D082",
+        "buttonColor": "#308060",
+        "titleAccent": "طبیعت",
+        "secondaryCta": {
+          "href": "/products",
+          "label": "خرید کودهای خانگی"
+        }
+      },
+      "anchor": null,
+      "createdAt": "2026-08-10T11:04:54.116Z",
+      "updatedAt": "2026-08-10T13:10:48.551Z"
+    },
+    {
+      "id": "cmsn4k3uu0002rkudr4bfhwe5",
+      "ownerType": "PAGE",
+      "pageId": "cmsmx2ei8000170udndvfchlt",
+      "regionId": null,
+      "type": "banner",
+      "name": "بنر",
+      "sortOrder": 1,
+      "isVisible": true,
+      "sourceType": "STATIC",
+      "payload": {
+        "cta": {
+          "href": "/products",
+          "label": "کودهای آپارتمانی"
+        },
+        "text": "لورم ایپــــــسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ، و با استفاده از طراحان گرافیک است!",
+        "image": "/b1.jpg",
+        "title": "زندگی سبز از تو خونه شروع می‌شه!",
+        "accentColor": "#F3CC30",
+        "titleAccent": "سبز"
+      },
+      "anchor": null,
+      "createdAt": "2026-08-10T11:04:54.150Z",
+      "updatedAt": "2026-08-10T13:07:59.505Z"
+    },
+    {
+      "id": "cmsn4k3u40001rkud7uhgjqe2",
+      "ownerType": "PAGE",
+      "pageId": "cmsmx2ei8000170udndvfchlt",
+      "regionId": null,
+      "type": "about",
+      "name": "درباره کوتاه",
+      "sortOrder": 2,
+      "isVisible": true,
+      "sourceType": "STATIC",
+      "payload": {
+        "text": "جایی که کیفیت، دوام و سلامت محیط‌زیست کنار هم جمع می‌شن. ما محصولاتمون رو با مواد کاملاً طبیعی و استانداردهای سخت‌گیرانه تولید می‌کنیم تا هم طول عمر بالایی داشته باشن، هم برای خانواده‌ت امن باشن. ترکیب تجربه‌ی سال‌ها کار تخصصی با فناوری روز، باعث شده بتونیم راهکارهایی ارائه بدیم که هم ظاهر فضای شما رو زیباتر کنه و هم کمترین آسیب رو به طبیعت بزنه.",
+        "title": "یک انتخاب سبز برای",
+        "years": 24,
+        "images": [
+          "/homeheader.jpg",
+          "/uploads/1786350053550-scrnli_6BwirdI5ge97Ug.png",
+          "/a2.png"
+        ],
+        "benefits": [
+          "محصولات 100% ارگانیک و طبیعی",
+          "بدون بو و مواد شیمیایی مضر",
+          "تضمین کیفیت و رضایت مشتری"
+        ],
+        "yearsLabel": "سال تجربه",
+        "titleAccent": "خونه‌های سبز"
+      },
+      "anchor": null,
+      "createdAt": "2026-08-10T11:04:54.124Z",
+      "updatedAt": "2026-08-10T13:24:24.587Z"
+    },
+    {
+      "id": "cmsn4k3yn0003rkudrpoxvf05",
+      "ownerType": "PAGE",
+      "pageId": "cmsmx2ei8000170udndvfchlt",
+      "regionId": null,
+      "type": "blog_category_grid",
+      "name": "آموزش‌ها",
+      "sortOrder": 3,
+      "isVisible": true,
+      "sourceType": "ENTITY_QUERY",
+      "payload": {
+        "sort": "-createdAt",
+        "limit": 6,
+        "title": "راهنمای استفاده بر اساس نوع گیاه",
+        "entity": "blog_category",
+        "eyebrow": "هر گیاهی، کود مخصوص خودش رو می‌خواد!",
+        "variant": "slider",
+        "parentSlug": "tutorials"
+      },
+      "anchor": null,
+      "createdAt": "2026-08-10T11:04:54.287Z",
+      "updatedAt": "2026-08-10T14:14:08.558Z"
+    },
+    {
+      "id": "cmsn4k4270004rkud3xcety7y",
+      "ownerType": "PAGE",
+      "pageId": "cmsmx2ei8000170udndvfchlt",
+      "regionId": null,
+      "type": "product_grid",
+      "name": "جدیدترین محصولات",
+      "sortOrder": 4,
+      "isVisible": true,
+      "sourceType": "ENTITY_QUERY",
+      "payload": {
+        "sort": "-createdAt",
+        "limit": 10,
+        "title": "جدیدترین محصولات",
+        "entity": "product",
+        "eyebrow": "فروشگاه آگروهوم",
+        "variant": "slider",
+        "showAllHref": "/products"
+      },
+      "anchor": null,
+      "createdAt": "2026-08-10T11:04:54.415Z",
+      "updatedAt": "2026-08-10T13:07:59.507Z"
+    },
+    {
+      "id": "cmsn4k4280005rkudbv1sc0od",
+      "ownerType": "PAGE",
+      "pageId": "cmsmx2ei8000170udndvfchlt",
+      "regionId": null,
+      "type": "comment_list",
+      "name": "نظرات کاربران",
+      "sortOrder": 5,
+      "isVisible": true,
+      "sourceType": "ENTITY_QUERY",
+      "payload": {
+        "sort": "-createdAt",
+        "limit": 12,
+        "title": "نظرات و رضایت مشتریان از محصولات ما",
+        "entity": "comment"
+      },
+      "anchor": null,
+      "createdAt": "2026-08-10T11:04:54.416Z",
+      "updatedAt": "2026-08-10T13:07:59.508Z"
+    },
+    {
+      "id": "cmsn4k42a0006rkudz218z1l1",
+      "ownerType": "PAGE",
+      "pageId": "cmsmx2ei8000170udndvfchlt",
+      "regionId": null,
+      "type": "faq",
+      "name": "سوالات متداول",
+      "sortOrder": 6,
+      "isVisible": true,
+      "sourceType": "STATIC",
+      "payload": {
+        "items": [
+          {
+            "title": "کودهای شما ارگانیک هستند تست؟",
+            "content": "<p>بله، محصولات ما بر پایه مواد طبیعی و استاندارد تولید می‌شوند.</p>"
+          },
+          {
+            "title": "چطور بهترین کود را انتخاب کنم؟",
+            "content": "<p>با توجه به نوع گیاه از بخش آموزش‌ها راهنمایی بگیرید یا با پشتیبانی تماس بگیرید.</p>"
+          }
+        ],
+        "title": "بیشترین سوالاتی که تا الان از ما پرسیده شده ..",
+        "images": [
+          "/faq1.png",
+          "/faq2.png"
+        ],
+        "eyebrow": "سوالات متداول مشتریان"
+      },
+      "anchor": null,
+      "createdAt": "2026-08-10T11:04:54.418Z",
+      "updatedAt": "2026-08-10T13:07:59.509Z"
+    },
+    {
+      "id": "cmsn4k42b0007rkud7s9ixax4",
+      "ownerType": "PAGE",
+      "pageId": "cmsmx2ei8000170udndvfchlt",
+      "regionId": null,
+      "type": "blog_list",
+      "name": "جدیدترین مطالب",
+      "sortOrder": 7,
+      "isVisible": true,
+      "sourceType": "ENTITY_QUERY",
+      "payload": {
+        "sort": "-createdAt",
+        "limit": 10,
+        "title": "جدیدترین اخبار و مقالات",
+        "entity": "blog",
+        "eyebrow": "اخبار و مقالات",
+        "showAllHref": "/blogs"
+      },
+      "anchor": null,
+      "createdAt": "2026-08-10T11:04:54.419Z",
+      "updatedAt": "2026-08-10T13:07:59.509Z"
+    }
+  ],
+  "seos": [
+    {
+      "id": "cmsn9xtcy00019gudim1jietz",
+      "legacyId": null,
+      "targetPath": "/product-categories/343",
+      "targetType": "product_category",
+      "targetLegacyId": "cmsn9xtbk00009gud1clxx2zw",
+      "metaTitle": null,
+      "metaDescription": null,
+      "metaKeyWords": [],
+      "canonicalUrl": null,
+      "pageId": null,
+      "createdAt": "2026-08-10T13:35:31.810Z",
+      "updatedAt": "2026-08-10T13:35:31.810Z"
+    },
+    {
+      "id": "cmsn9y33n00039gudd51ehyk3",
+      "legacyId": null,
+      "targetPath": "/product-categories/34343",
+      "targetType": "product_category",
+      "targetLegacyId": "cmsn9y33300029gudg9saqhu9",
+      "metaTitle": null,
+      "metaDescription": null,
+      "metaKeyWords": [],
+      "canonicalUrl": null,
+      "pageId": null,
+      "createdAt": "2026-08-10T13:35:44.435Z",
+      "updatedAt": "2026-08-10T13:35:44.435Z"
+    },
+    {
+      "id": "cmsna7sb5000004udb0qjw6ev",
+      "legacyId": null,
+      "targetPath": "/product-categories/Potting Mix",
+      "targetType": "product_category",
+      "targetLegacyId": "cmsna6n0d0000toud9nq7g396",
+      "metaTitle": null,
+      "metaDescription": null,
+      "metaKeyWords": [],
+      "canonicalUrl": null,
+      "pageId": null,
+      "createdAt": "2026-08-10T13:43:17.009Z",
+      "updatedAt": "2026-08-10T13:43:39.295Z"
+    },
+    {
+      "id": "cmsnb46ou000140uduzgn5u20",
+      "legacyId": null,
+      "targetPath": "/products/2323",
+      "targetType": "product",
+      "targetLegacyId": "cmsnb469t000040ud8oo7qlot",
+      "metaTitle": "34",
+      "metaDescription": "3",
+      "metaKeyWords": [
+        "23"
+      ],
+      "canonicalUrl": null,
+      "pageId": null,
+      "createdAt": "2026-08-10T14:08:28.638Z",
+      "updatedAt": "2026-08-10T14:11:07.604Z"
+    },
+    {
+      "id": "cmsnb8pec000340ud2o0dmk6v",
+      "legacyId": null,
+      "targetPath": "/blog-categories/fazaye-sabz-hayat",
+      "targetType": "blog_category",
+      "targetLegacyId": "cmsnb8pdb000240udzds8xy0d",
+      "metaTitle": null,
+      "metaDescription": null,
+      "metaKeyWords": [],
+      "canonicalUrl": null,
+      "pageId": null,
+      "createdAt": "2026-08-10T14:11:59.508Z",
+      "updatedAt": "2026-08-10T14:13:36.037Z"
+    },
+    {
+      "id": "cmsnbaovz000540udpvwsoos8",
+      "legacyId": null,
+      "targetPath": "/blog-categories/آموزشی",
+      "targetType": "blog_category",
+      "targetLegacyId": "cmsnbaov5000440udd9namaxg",
+      "metaTitle": null,
+      "metaDescription": null,
+      "metaKeyWords": [],
+      "canonicalUrl": null,
+      "pageId": null,
+      "createdAt": "2026-08-10T14:13:32.159Z",
+      "updatedAt": "2026-08-10T14:13:32.159Z"
+    }
+  ],
+  "media": [
+    {
+      "id": "cmsmyp6t80004jgudvksemrwc",
+      "legacyId": null,
+      "url": "/uploads/1786350053550-scrnli_6BwirdI5ge97Ug.png",
+      "type": "image",
+      "name": "scrnli_6BwirdI5ge97Ug.png",
+      "alt": "12",
+      "mimeType": "image/png",
+      "size": null,
+      "createdAt": "2026-08-10T08:20:53.564Z",
+      "updatedAt": "2026-08-10T08:20:53.564Z"
+    }
+  ],
+  "contactMessages": []
+}

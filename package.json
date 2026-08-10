@@ -1,0 +1,22 @@
+{
+  "name": "agrohome",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "pnpm -r --parallel --filter @agrohome/main --filter @agrohome/admin --filter @agrohome/api run dev",
+    "dev:main": "pnpm --filter @agrohome/main dev",
+    "dev:admin": "pnpm --filter @agrohome/admin dev",
+    "dev:api": "pnpm --filter @agrohome/api dev",
+    "build": "pnpm -r --filter @agrohome/shared --filter @agrohome/api --filter @agrohome/main --filter @agrohome/admin run build",
+    "build:main": "pnpm --filter @agrohome/main build",
+    "build:admin": "pnpm --filter @agrohome/admin build",
+    "build:api": "pnpm --filter @agrohome/api build",
+    "db:generate": "pnpm --filter @agrohome/api db:generate",
+    "db:migrate": "pnpm --filter @agrohome/api db:migrate",
+    "db:push": "pnpm --filter @agrohome/api db:push",
+    "db:seed": "pnpm --filter @agrohome/api db:seed",
+    "db:export-seed": "pnpm --filter @agrohome/api db:export-seed",
+    "import:legacy": "pnpm --filter @agrohome/api import:legacy"
+  }
+}

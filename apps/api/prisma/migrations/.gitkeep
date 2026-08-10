@@ -1,0 +1,1 @@
+# Keep an empty migration history starter; run `pnpm db:migrate` after setting DATABASE_URL.

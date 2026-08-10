@@ -1,0 +1,358 @@
+@import "tailwindcss";
+
+html{
+  scroll-behavior: smooth;
+  /* overflow-x:hidden !important; */
+}
+
+
+#swal2-title {
+  font-size: 18px;
+}
+@font-face {
+  font-family: 'fontfanum';
+
+  src: url('../fonts/ttf/IRANSansFaNum.ttf');
+}
+.fanum {
+  font-family: 'fontfanum' !important;
+}
+line {
+  width: 160px !important;
+}
+
+@media screen and (max-width: 1600px) {
+  .line {
+    width: 490px !important;
+  }
+}
+
+@media screen and (max-width: 1800px) {
+  .line {
+    width: 190px !important;
+  }
+}
+
+
+pre {
+  font-family: font !important;
+}
+
+.btn-media {
+  position: relative;
+  display: inline-block;
+  user-select: none;
+  transition: all 200ms ease !important;
+  background-color: transparent;
+  padding-bottom: 10px;
+}
+
+.bg-select {
+  background-color: #2196F3;
+}
+
+.btn-media:hover {
+  background-color: #008cff1f !important;
+}
+
+.p-name {
+  display: -webkit-box;
+  text-wrap: nowrap;
+
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  -webkit-box-pack: end;
+}
+
+.DraggableimageBox:hover {
+  scale: 1;
+}
+
+.DraggableimageBox:focus {
+  scale: 0.9;
+}
+
+.DraggableimageBox {
+  scale: 0.9;
+  transition: scale 200ms ease;
+}
+
+.loading-bg {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+  background: linear-gradient(120deg,
+      rgba(0, 170, 187, 0.1) 0%,
+      rgba(0, 170, 187, 0.3) 50%,
+      rgba(0, 170, 187, 0.1) 100%);
+  background-size: 200% 100%;
+  animation: loading-slide 1s linear infinite;
+  pointer-events: none;
+  border-radius: 5px;
+}
+
+@keyframes loading-slide {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.tox-silver-sink {
+  z-index: 99 !important;
+}
+
+.text-stroke-3 {
+  text-shadow: -1px -1px 0 #333, 1px -1px 0 #333, -1px 1px 0 #333, 1px 1px 0 #333;
+}
+
+.editor strong,
+.productDesc strong {
+  font-family: IRANSansBold !important;
+}
+
+.editor * {
+  font-family: IRANSans !important;
+}
+
+.editor *,
+.productDesc * {
+  line-height: 1.9 !important;
+  letter-spacing: 0 !important;
+
+}
+
+.editor div,
+.editor p,
+.productDesc p {
+  font-size: 16px !important;
+
+}
+
+.editor p,
+.productDesc P {
+  margin: 0 !important;
+}
+
+
+.editor li>h3,
+.editor li>h1,
+.editor li>h2,
+.editor li>h4,
+.editor li>h5,
+.editor li>h6 {
+  display: inline !important;
+}
+
+.editor h1 {
+  font-size: 28px !important;
+}
+
+.editor h2 {
+  font-size: 26px !important;
+}
+
+.editor h3 {
+  font-size: 24px !important;
+}
+
+.editor h4 {
+  font-size: 22px !important;
+}
+
+.editor h5 {
+  font-size: 20px !important;
+}
+
+.editor h6 {
+  font-size: 20px !important;
+}
+
+.editor li {
+  margin: 10px 0px !important;
+}
+
+.editor ul {
+  padding: 0 !important;
+  margin: 10px !important;
+}
+
+.editor ol>ul {
+  padding: 0 !important;
+  margin: 0px !important;
+  /* list-style-position: inside; */
+}
+
+.editor ol {
+  padding: 0 !important;
+  margin: 10px !important;
+  /* list-style-position: inside; */
+}
+
+@media screen and (max-width: 480px) {
+
+  .productDesc p,
+  .editor p,
+  .editor * {
+    font-size: 13px !important;
+  }
+
+  .editor h1 {
+    font-size: 22px !important;
+  }
+
+  .editor h2 {
+    font-size: 20px !important;
+  }
+
+  .editor h3 {
+    font-size: 17px !important;
+  }
+
+  .editor h4 {
+    font-size: 16px !important;
+  }
+
+  .editor h5 {
+    font-size: 15px !important;
+  }
+
+  .editor h6 {
+    font-size: 15px !important;
+  }
+}
+
+
+
+.swiper-pagination-bullet-bg-orange {
+  background-color: #ef7853 !important;
+}
+
+.swiper-pagination-bullet-bg-yellow {
+  background-color: #ffe57d !important;
+}
+
+.swiper-pagination-bullet-bg-green {
+  background-color: #009180 !important;
+}
+
+/* nprogress custom style */
+#nprogress {
+  pointer-events: none;
+}
+
+#nprogress .bar {
+  background: #F36339 !important;
+  /* رنگ خط */
+  position: fixed;
+  z-index: 1031;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 6px !important;
+}
+
+#nprogress .peg {
+
+  position: absolute;
+  right: 0px;
+  width: 100px;
+  height: 100%;
+  box-shadow: 0 0 10px #F36339, 0 0 5px #F36339 !important;
+  opacity: 1;
+  transform: rotate(3deg) translate(0px, -4px);
+}
+
+#nprogress .spinner {
+  display: none !important;
+
+}
+
+
+/* globals.css */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.map-container {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.dots-between {
+  flex-grow: 1;
+  border-bottom: 2px dotted #005EA4;
+  margin: 0 8px;
+  /* فاصله بین متن و خط */
+}
+.swiper-button-prev:after, .swiper-rtl .swiper-button-next:after {
+  content: "prev";
+  color: var(--color-bgSec) !important;
+  scale: 0.7;
+}
+.glass-card {
+  /* width: 240px;
+  height: 360px; */
+
+  background: rgba(0, 0, 0, 0.247);
+  backdrop-filter: blur(20px);
+  /* -webkit-backdrop-filter: blur(15px); */
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  
+}
+
+.glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.8),
+    transparent
+  );
+}
+.slider-default{
+  height: 360px !important;
+}
+.slider-default .default-bullet {
+  
+  width: 8px;
+  height: 8px;
+  transition: all 0.1s;
+}
+
+
+.slider-default .swiper-pagination-bullet-active.default-bullet {
+
+  width: 25px;
+  border-radius: 5px;
+  background: #308060 !important;
+}
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slideIn {
+  animation: slideIn .3s ease forwards;
+}
