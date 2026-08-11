@@ -26,15 +26,14 @@ export async function generateMetadata({ params }) {
   if (!blog.content) return {};
 
   const blogSeo = await getBlogSeo(blog.content._id);
-  if (!blogSeo?.content) return {};
+  const item = blogSeo?.content;
 
-  const item = blogSeo.content;
   return {
-    title: item.metaTitle || '',
-    description: item.metaDescription || '',
-    keywords: item.metaKeyWords?.join(', ') || '',
+    title: item?.metaTitle || blog.content.title || '',
+    description: item?.metaDescription || '',
+    keywords: item?.metaKeyWords?.join(', ') || '',
     alternates: {
-      canonical: item.canonicalUrl || undefined,
+      canonical: item?.canonicalUrl || `/blog/${slug}`,
     },
   };
 }

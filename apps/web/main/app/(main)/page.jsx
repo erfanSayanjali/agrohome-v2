@@ -1,5 +1,5 @@
 import CmsHomeSections from '../../components/main/cms/CmsHomeSections';
-import { getPublishedHomePage } from '../../lib/data/cms';
+import { getPublishedHomePage, metadataFromSeo } from '../../lib/data/cms';
 import '../../styles/home.css';
 
 export default async function Home() {
@@ -19,4 +19,12 @@ export default async function Home() {
   }
 
   return <CmsHomeSections blocks={cmsHome.blocks} />;
+}
+
+export async function generateMetadata() {
+  const cmsHome = await getPublishedHomePage();
+  return metadataFromSeo(cmsHome?.seo, {
+    title: cmsHome?.title || 'آگروهوم',
+    canonical: '/',
+  });
 }

@@ -20,14 +20,14 @@ export default page;
 export async function generateMetadata() {
   const seo = await getSeoByPath('/blogs');
   const item = seo?.content?.[0];
-  if (!item) return {};
+  if (!item) return { title: 'وبلاگ' };
 
   return {
-    title: item.metaTitle || '',
+    title: item.metaTitle || 'وبلاگ',
     description: item.metaDescription || '',
     keywords: item.metaKeyWords?.join(', ') || '',
     alternates: {
-      canonical: item.canonicalUrl || undefined,
+      canonical: item.canonicalUrl || '/blogs',
     },
   };
 }

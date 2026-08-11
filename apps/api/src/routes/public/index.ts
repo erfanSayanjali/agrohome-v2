@@ -247,10 +247,21 @@ export async function publicRoutes(app: FastifyInstance) {
 
   app.get("/products", async (request) => {
     const q = parseListQuery(request.query as Record<string, unknown>);
+    const filters = { ...q.filters };
+    const categorySlugs = filters.categorySlugs;
+    delete filters.categorySlugs;
+
     const where: Record<string, unknown> = {
       status: "AVAILABLE",
-      ...q.filters,
+      ...filters,
     };
+
+    if (Array.isArray(categorySlugs) && categorySlugs.length) {
+      where.categories = {
+        some: { category: { slug: { in: categorySlugs.map(String) } } },
+      };
+    }
+
     if (q.search) {
       where.OR = [
         { title: { contains: q.search, mode: "insensitive" } },

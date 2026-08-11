@@ -1,5 +1,5 @@
 import CmsContactSections from '../../../components/main/cms/CmsContactSections';
-import { getPublishedContactPage } from '../../../lib/data/cms';
+import { getPublishedContactPage, metadataFromSeo } from '../../../lib/data/cms';
 import { getSeoByPath } from '../../../lib/data/stubs';
 
 export default async function Contact() {
@@ -22,16 +22,18 @@ export default async function Contact() {
 }
 
 export async function generateMetadata() {
+  const cmsContact = await getPublishedContactPage();
+  if (cmsContact?.seo) {
+    return metadataFromSeo(cmsContact.seo, {
+      title: cmsContact.title || 'تماس با ما',
+      canonical: '/contact',
+    });
+  }
+
   const seo = await getSeoByPath('/contact');
   const item = seo?.content?.[0];
-  if (!item) return { title: 'تماس با ما' };
-
-  return {
-    title: item.metaTitle || 'تماس با ما',
-    description: item.metaDescription || '',
-    keywords: item.metaKeyWords?.join(', ') || '',
-    alternates: {
-      canonical: item.canonicalUrl || undefined,
-    },
-  };
+  return metadataFromSeo(item ?? null, {
+    title: 'تماس با ما',
+    canonical: '/contact',
+  });
 }

@@ -33,12 +33,98 @@ type CategoryNode = {
   [key: string]: unknown;
 };
 
+type ProductLike = {
+  id?: string;
+  _id?: string;
+  media?: { url?: string; alt?: string | null } | null;
+  thumbnailUrl?: string;
+  categories?: Array<{
+    category?: { title?: string; slug?: string };
+    title?: string;
+    slug?: string;
+  }>;
+  thumbnail_id?: Array<{ url?: string; alt?: string | null }>;
+  category_id?: Array<{ title?: string; slug?: string }>;
+  [key: string]: unknown;
+};
+
 function normalizeCategoryTree(nodes: CategoryNode[] = []): CategoryNode[] {
   return nodes.map((node) => ({
     ...node,
     _id: node.id || node._id,
     children: normalizeCategoryTree(node.children || []),
   }));
+}
+
+function normalizeProduct(p: ProductLike) {
+  const media =
+    p.media || (p.thumbnailUrl ? { url: p.thumbnailUrl, alt: null } : null);
+  const category_id = p.categories?.length
+    ? p.categories.map((c) => ({
+        title: c.category?.title || c.title,
+        slug: c.category?.slug || c.slug,
+      }))
+    : p.category_id || [];
+  return {
+    ...p,
+    _id: p.id || p._id,
+    media,
+    thumbnail_id: media
+      ? [{ url: media.url, alt: media.alt }]
+      : p.thumbnail_id || [],
+    category_id,
+  };
+}
+
+/** Convert legacy Mongo-style product filters for the public products API. */
+function toPrismaProductFilters(filters: Record<string, unknown> = {}) {
+  const out: Record<string, unknown> = { ...filters };
+
+  const legacySlug = out["category_id.slug"] as
+    | { $in?: string[]; in?: string[] }
+    | string[]
+    | string
+    | undefined;
+  let slugs: string[] = Array.isArray(out.categorySlugs)
+    ? (out.categorySlugs as unknown[]).map(String).filter(Boolean)
+    : [];
+
+  if (typeof legacySlug === "string") {
+    slugs = [legacySlug];
+  } else if (Array.isArray(legacySlug)) {
+    slugs = legacySlug.map(String);
+  } else if (legacySlug && typeof legacySlug === "object") {
+    const list = legacySlug.$in || legacySlug.in || [];
+    slugs = list.map(String);
+  }
+  if (legacySlug !== undefined) delete out["category_id.slug"];
+
+  if (slugs.length) out.categorySlugs = slugs;
+  else delete out.categorySlugs;
+
+  return out;
+}
+
+function buildListQuery(params?: {
+  sort?: string;
+  search?: string;
+  filters?: Record<string, unknown>;
+  page?: number;
+  limit?: number;
+  transformFilters?: (f: Record<string, unknown>) => Record<string, unknown>;
+}) {
+  const qs = new URLSearchParams();
+  if (params?.sort) qs.set("sort", params.sort);
+  if (params?.search) qs.set("search", params.search);
+  if (params?.page) qs.set("page", String(params.page));
+  qs.set("limit", String(params?.limit ?? 100));
+  if (params?.filters && Object.keys(params.filters).length) {
+    const filters = params.transformFilters
+      ? params.transformFilters(params.filters)
+      : params.filters;
+    qs.set("filters", JSON.stringify(filters));
+  }
+  return qs.toString();
 }
 
 export async function getSiteSettings() {
@@ -127,7 +213,7 @@ export async function getHomeComments() {
 }
 
 export async function getAvailableProducts() {
-  return emptyList();
+  return listProducts({ sort: "-createdAt", limit: 12 });
 }
 
 export async function getPublishedBlogCategories() {
@@ -138,16 +224,25 @@ export async function getPublishedBlogs() {
   return emptyList();
 }
 
-export async function getProductBySlug(_slug: string) {
-  return emptyList();
+export async function getProductBySlug(slug: string) {
+  const res = await apiJson<{ content: ProductLike | null }>(
+    `/products/${encodeURIComponent(slug)}`
+  );
+  if (!res?.content) return emptyList();
+  return { content: [normalizeProduct(res.content)], total: 1 };
 }
 
 export async function getProductSpecifications(_productId: string) {
   return emptyList();
 }
 
-export async function getSimilarProducts(_categorySlug?: string) {
-  return emptyList();
+export async function getSimilarProducts(categorySlug?: string) {
+  if (!categorySlug) return emptyList();
+  return listProducts({
+    sort: "-createdAt",
+    limit: 8,
+    filters: { categorySlugs: [categorySlug] },
+  });
 }
 
 export async function getBlogBySlug(_slug: string) {
@@ -166,32 +261,90 @@ export async function getWidgetKadamat() {
   return { content: [] as unknown[] };
 }
 
-export async function getSeoByPath(_targetPath: string) {
-  return emptyList();
+type SeoRecord = {
+  id?: string;
+  targetPath?: string | null;
+  targetType?: string | null;
+  targetLegacyId?: string | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  metaKeyWords?: string[];
+  canonicalUrl?: string | null;
+  pageId?: string | null;
+};
+
+function normalizeSeoPath(targetPath: string) {
+  const trimmed = String(targetPath || "").trim();
+  if (!trimmed || trimmed === "/") return "/";
+  return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
 }
 
-export async function getProductSeo(_productId: string) {
-  return emptyOne();
+async function getSeoByTarget(targetType: string, targetId: string) {
+  if (!targetId) return emptyOne<SeoRecord>();
+  const query = buildListQuery({
+    filters: { targetType, targetLegacyId: targetId },
+    limit: 1,
+  });
+  const res = await apiJson<{ content: SeoRecord[]; total?: number }>(
+    `/seo?${query}`
+  );
+  if (!res?.content?.[0]) return emptyOne<SeoRecord>();
+  return { content: res.content[0] };
 }
 
-export async function getBlogSeo(_blogId: string) {
-  return emptyOne();
+export async function getSeoByPath(targetPath: string) {
+  const path = normalizeSeoPath(targetPath);
+  const query = buildListQuery({
+    filters: { targetPath: path },
+    limit: 1,
+  });
+  const res = await apiJson<{ content: SeoRecord[]; total?: number }>(
+    `/seo?${query}`
+  );
+  if (!res?.content?.length) return emptyList<SeoRecord>();
+  return {
+    content: res.content,
+    total: res.total ?? res.content.length,
+  };
 }
 
-export async function getCategorySeo(_categoryId: string) {
-  return emptyOne();
+export async function getProductSeo(productId: string) {
+  return getSeoByTarget("product", productId);
 }
 
-export async function getBlogCategorySeo(_categoryId: string) {
-  return emptyOne();
+export async function getBlogSeo(blogId: string) {
+  return getSeoByTarget("blog", blogId);
 }
 
-export async function listProducts(_params?: {
+export async function getCategorySeo(categoryId: string) {
+  return getSeoByTarget("product_category", categoryId);
+}
+
+export async function getBlogCategorySeo(categoryId: string) {
+  return getSeoByTarget("blog_category", categoryId);
+}
+
+export async function listProducts(params?: {
   sort?: string;
   search?: string;
   filters?: Record<string, unknown>;
+  page?: number;
+  limit?: number;
 }) {
-  return emptyList();
+  const query = buildListQuery({
+    ...params,
+    transformFilters: toPrismaProductFilters,
+  });
+  const res = await apiJson<{ content: ProductLike[]; total?: number }>(
+    `/products?${query}`
+  );
+  if (!res?.content?.length) {
+    return { content: [], total: res?.total ?? 0 };
+  }
+  return {
+    content: res.content.map(normalizeProduct),
+    total: res.total ?? res.content.length,
+  };
 }
 
 export async function listBlogs(_params?: {

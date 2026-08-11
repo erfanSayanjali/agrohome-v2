@@ -85,21 +85,23 @@ const ProductsPage = ({ product_category, currentCategory = null }) => {
       oldest: 'createdAt',
     };
 
-    const filterRegister = ({ categories, status }) => ({
-      status: 'AVAILABLE',
-      ...(currentCategory && { 'category_id.slug': { $in: [currentCategory.slug] } }),
-      ...(categories && { 'category_id.slug': { $in: categories?.split(' ')?.map(item => item) } })
-      // اگر خواستی بعدا کد دسته‌بندی رو فعال می‌کنم
-    });
+    const categorySlugs = [
+      ...(currentCategory?.slug ? [currentCategory.slug] : []),
+      ...(categories ? categories.split(' ').filter(Boolean) : []),
+    ];
 
     try {
       const res = await listProducts({
         sort: sortRegister[sort || 'newest'],
         search,
-        filters: filterRegister({ categories, status: available }),
+        limit: 100,
+        filters: {
+          status: 'AVAILABLE',
+          ...(categorySlugs.length ? { categorySlugs } : {}),
+        },
       });
 
-      setState({ products: res.content, loading: false });
+      setState({ products: res.content || [], loading: false });
     } catch (error) {
       console.log(error);
       setState((prev) => ({ ...prev, loading: false }));
@@ -110,7 +112,7 @@ const ProductsPage = ({ product_category, currentCategory = null }) => {
   useEffect(() => {
     if (!sort) return; // تا وقتی defaultQuery ست نشده fetch نزن
     getProducts();
-  }, [sort, categories, available, search]);
+  }, [sort, categories, available, search, currentCategory?.slug]);
   const isMobile = useIsMobile(767)
   return (
     <div className='md:mt-10 max-w-7xl mx-auto'>

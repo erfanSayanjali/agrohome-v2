@@ -1,5 +1,5 @@
 import CmsAboutSections from '../../../components/main/cms/CmsAboutSections';
-import { getPublishedAboutPage } from '../../../lib/data/cms';
+import { getPublishedAboutPage, metadataFromSeo } from '../../../lib/data/cms';
 
 export default async function About() {
   const cmsAbout = await getPublishedAboutPage();
@@ -22,12 +22,8 @@ export default async function About() {
 
 export async function generateMetadata() {
   const cmsAbout = await getPublishedAboutPage();
-  if (!cmsAbout?.title) return { title: 'درباره ما' };
-
-  return {
-    title: cmsAbout.title,
-    alternates: {
-      canonical: '/about',
-    },
-  };
+  return metadataFromSeo(cmsAbout?.seo, {
+    title: cmsAbout?.title || 'درباره ما',
+    canonical: '/about',
+  });
 }

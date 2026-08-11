@@ -42,14 +42,13 @@ export async function generateMetadata({ params }) {
 
   const seoRes = await getBlogCategorySeo(categoryRes.content._id);
   const item = seoRes?.content;
-  if (!item) return {};
 
   return {
-    title: item.metaTitle ?? '',
-    description: item.metaDescription ?? '',
-    keywords: item.metaKeyWords?.join(', ') ?? '',
+    title: item?.metaTitle || categoryRes.content.title || '',
+    description: item?.metaDescription || '',
+    keywords: item?.metaKeyWords?.join(', ') || '',
     alternates: {
-      canonical: item.canonicalUrl || undefined,
+      canonical: item?.canonicalUrl || `/blogs/${slug}`,
     },
   };
 }

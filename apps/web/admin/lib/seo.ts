@@ -62,21 +62,22 @@ export function seoRecordToForm(seo: SeoRecord | null | undefined, fallbackPath 
   };
 }
 
+/** Paths must match apps/web/main routes (used for targetPath + canonical). */
 export function buildSeoPath(type: SeoTargetType, slug: string): string {
   const clean = String(slug || "")
     .trim()
     .replace(/^\/+/, "");
   switch (type) {
     case "product":
-      return `/products/${clean}`;
+      return `/product/${clean}`;
     case "product_category":
-      return `/product-categories/${clean}`;
+      return `/products/${clean}`;
     case "blog":
-      return `/blogs/${clean}`;
+      return `/blog/${clean}`;
     case "blog_category":
-      return `/blog-categories/${clean}`;
+      return `/blogs/${clean}`;
     case "page":
-      return clean.startsWith("/") ? clean : `/${clean}`;
+      return !clean || clean === "home" ? "/" : clean.startsWith("/") ? clean : `/${clean}`;
     default:
       return `/${clean}`;
   }

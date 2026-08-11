@@ -37,12 +37,25 @@ async function apiJson<T>(path: string, init?: RequestInit): Promise<T | null> {
   }
 }
 
+export type PageSeo = {
+  id?: string;
+  targetPath?: string | null;
+  targetType?: string | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  metaKeyWords?: string[];
+  canonicalUrl?: string | null;
+  pageId?: string | null;
+} | null;
+
 type PagePayload = {
   content: {
+    id?: string;
     title: string;
     slug: string;
     revalidateSeconds?: number;
     snapshot?: { blocks?: SnapshotBlock[] };
+    seo?: PageSeo;
   };
 };
 
@@ -73,10 +86,12 @@ function asResolvedList(value: unknown): unknown[] {
 }
 
 export async function getPublishedPage(slug: string): Promise<{
+  id?: string;
   title: string;
   slug: string;
   blocks: ResolvedHomeBlock[];
   revalidateSeconds?: number;
+  seo?: PageSeo;
 } | null> {
   const page = await fetchPublishedPageBySlug(slug);
 
@@ -109,9 +124,11 @@ export async function getPublishedPage(slug: string): Promise<{
   }
 
   return {
+    id: page.content.id,
     title: page.content.title,
     slug: page.content.slug,
     revalidateSeconds: page.content.revalidateSeconds,
+    seo: page.content.seo ?? null,
     blocks: blocks.map((b) => {
       const isEntity =
         b.sourceType === "ENTITY_QUERY" || b.sourceType === "ENTITY_REF";
@@ -122,6 +139,25 @@ export async function getPublishedPage(slug: string): Promise<{
           : (resolvedMap[b.id] ?? b.payload),
       };
     }),
+  };
+}
+
+/** Build Next.js metadata from a CMS/entity SEO record. */
+export function metadataFromSeo(
+  seo?: PageSeo,
+  fallback?: { title?: string; canonical?: string }
+) {
+  if (!seo && !fallback?.title) return {};
+  const keywords = Array.isArray(seo?.metaKeyWords)
+    ? seo.metaKeyWords.join(", ")
+    : "";
+  return {
+    title: seo?.metaTitle || fallback?.title || undefined,
+    description: seo?.metaDescription || undefined,
+    keywords: keywords || undefined,
+    alternates: {
+      canonical: seo?.canonicalUrl || fallback?.canonical || undefined,
+    },
   };
 }
 

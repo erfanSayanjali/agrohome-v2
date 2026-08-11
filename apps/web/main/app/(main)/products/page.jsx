@@ -5,14 +5,14 @@ import { getProductCategories, getSeoByPath } from '../../../lib/data/stubs';
 export async function generateMetadata() {
   const seo = await getSeoByPath('/products');
   const item = seo?.content?.[0];
-  if (!item) return {};
+  if (!item) return { title: 'محصولات' };
 
   return {
-    title: item.metaTitle || '',
+    title: item.metaTitle || 'محصولات',
     description: item.metaDescription || '',
     keywords: item.metaKeyWords?.join(', ') || '',
     alternates: {
-      canonical: item.canonicalUrl || undefined,
+      canonical: item.canonicalUrl || '/products',
     },
   };
 }

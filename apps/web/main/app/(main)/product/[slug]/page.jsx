@@ -38,15 +38,15 @@ export async function generateMetadata({ params }) {
   if (!product.content?.[0]) return {};
 
   const productSeo = await getProductSeo(product.content[0]._id);
-  if (!productSeo?.content) return {};
+  const item = productSeo?.content;
+  const title = item?.metaTitle || product.content[0].title || '';
 
-  const item = productSeo.content;
   return {
-    title: item.metaTitle || '',
-    description: item.metaDescription || '',
-    keywords: item.metaKeyWords?.join(', ') || '',
+    title,
+    description: item?.metaDescription || product.content[0].shortDescription || '',
+    keywords: item?.metaKeyWords?.join(', ') || '',
     alternates: {
-      canonical: item.canonicalUrl || undefined,
+      canonical: item?.canonicalUrl || `/product/${slug}`,
     },
   };
 }
