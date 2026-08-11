@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import {
   Box,
   Loader2,
+  MessageSquare,
   Plus,
   Save,
   SlidersHorizontal,
@@ -57,6 +58,7 @@ import {
   upsertEntitySeo,
   type SeoFormValues,
 } from "@/lib/seo";
+import { EntityCommentsPanel } from "@/components/comments/entity-comments-panel";
 import type { MediaRef } from "@agrohome/shared";
 import { toMediaRef } from "@agrohome/shared";
 
@@ -443,6 +445,15 @@ export function ProductEditor({
                 >
                   SEO
                 </TabsTrigger>
+                {mode === "edit" && productId ? (
+                  <TabsTrigger
+                    value="comments"
+                    className="gap-2 rounded-b-none rounded-t-lg border border-transparent px-4 data-[state=active]:border-[var(--admin-border)] data-[state=active]:border-b-[var(--admin-surface)] data-[state=active]:bg-[var(--admin-surface)]"
+                  >
+                    <MessageSquare className="h-3.5 w-3.5" />
+                    نظرات
+                  </TabsTrigger>
+                ) : null}
               </TabsList>
             </div>
 
@@ -792,6 +803,16 @@ export function ProductEditor({
                   onChange={setSeo}
                 />
               </TabsContent>
+
+              {mode === "edit" && productId ? (
+                <TabsContent value="comments" className="mt-0 space-y-4">
+                  <EntityCommentsPanel
+                    targetType="product"
+                    entityId={productId}
+                    entityTitle={form.title}
+                  />
+                </TabsContent>
+              ) : null}
             </div>
           </Tabs>
         )}

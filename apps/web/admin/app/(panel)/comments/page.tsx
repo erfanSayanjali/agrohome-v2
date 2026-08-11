@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { Eye, EyeOff, MessageSquareReply } from "lucide-react";
 import { apiPost, apiPut, ApiError } from "@/lib/api";
@@ -25,6 +26,16 @@ type Row = {
   publish: boolean;
   email?: string | null;
   targetType?: string | null;
+  productId?: string | null;
+  blogId?: string | null;
+  product?: { id: string; title?: string } | null;
+  blog?: { id: string; title?: string } | null;
+};
+
+const targetLabel: Record<string, string> = {
+  product: "محصول",
+  blog: "مقاله",
+  comment: "پاسخ",
 };
 
 export default function CommentsPage() {
@@ -37,7 +48,7 @@ export default function CommentsPage() {
     <>
       <CrudResourcePage<Row>
         title="نظرات"
-        description="فیلتر انتشار از API؛ پاسخ ادمین و انتشار/عدم انتشار"
+        description="نظرات محصول و مقاله در یک مدل؛ پیام‌های فرم تماس جداگانه در «پیام‌های تماس» هستند."
         path="/admin/comments"
         searchPlaceholder="متن یا نام…"
         filters={[
@@ -49,9 +60,44 @@ export default function CommentsPage() {
               { value: "false", label: "در انتظار" },
             ],
           },
+          {
+            key: "targetType",
+            label: "نوع",
+            options: [
+              { value: "product", label: "محصول" },
+              { value: "blog", label: "مقاله" },
+              { value: "comment", label: "پاسخ" },
+            ],
+          },
         ]}
         columns={[
           { key: "nick", header: "نام", cell: (r) => r.nickName },
+          {
+            key: "type",
+            header: "نوع",
+            cell: (r) => targetLabel[r.targetType || ""] || r.targetType || "—",
+          },
+          {
+            key: "target",
+            header: "مرتبط با",
+            cell: (r) => {
+              if (r.product?.title && r.productId) {
+                return (
+                  <Link
+                    className="text-[var(--admin-accent)] hover:underline"
+                    href={`/products`}
+                    title={r.product.title}
+                  >
+                    {r.product.title}
+                  </Link>
+                );
+              }
+              if (r.blog?.title) {
+                return <span title={r.blog.title}>{r.blog.title}</span>;
+              }
+              return "—";
+            },
+          },
           {
             key: "content",
             header: "متن",

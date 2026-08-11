@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, MessageSquare } from "lucide-react";
 import { apiDelete, apiPut, ApiError } from "@/lib/api";
 import { useResourceList } from "@/lib/use-resource-list";
 import { PageHeader } from "@/components/shell/page-header";
@@ -76,6 +77,15 @@ export default function ProductsPage() {
                   }}
                 >
                   <Pencil className="h-4 w-4" />
+                </Button>
+                <Button type="button" size="icon" variant="ghost" aria-label="نظرات" asChild>
+                  <Link
+                    href={`/comments?filters=${encodeURIComponent(
+                      JSON.stringify({ targetType: "product", productId: row.id })
+                    )}`}
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                  </Link>
                 </Button>
                 <Button
                   type="button"

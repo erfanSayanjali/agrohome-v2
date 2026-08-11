@@ -1,6 +1,9 @@
 "use client";
 
+import Link from "next/link";
+import { MessageSquare } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { CrudResourcePage } from "@/components/data/crud-resource-page";
 import { categoryDisplayLabel, mapCategoryOption } from "@/lib/category-option";
 import type { MediaRef } from "@agrohome/shared";
@@ -109,6 +112,17 @@ export default function BlogsPage() {
         categoryId: v.categoryId ? v.categoryId : null,
       })}
       seoTarget={{ type: "blog" }}
+      extraActions={(row) => (
+        <Button type="button" size="icon" variant="ghost" aria-label="نظرات" asChild>
+          <Link
+            href={`/comments?filters=${encodeURIComponent(
+              JSON.stringify({ targetType: "blog", blogId: row.id })
+            )}`}
+          >
+            <MessageSquare className="h-4 w-4" />
+          </Link>
+        </Button>
+      )}
     />
   );
 }

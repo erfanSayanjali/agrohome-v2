@@ -72,6 +72,11 @@ const navEntries: NavEntry[] = [
         { href: "/product-specifications", label: "مشخصات محصول", icon: SlidersHorizontal },
         { href: "/tags", label: "تگ‌ها", icon: Tags },
         { href: "/tag-categories", label: "موضوع تگ", icon: Tags },
+        {
+          href: '/comments?filters=%7B%22targetType%22%3A%22product%22%7D',
+          label: "نظرات محصولات",
+          icon: MessageSquare,
+        },
       ],
     },
   },
@@ -84,7 +89,23 @@ const navEntries: NavEntry[] = [
       items: [
         { href: "/blogs", label: "مطالب وبلاگ", icon: FileText },
         { href: "/blog-categories", label: "دسته‌بندی وبلاگ", icon: FolderTree },
-        { href: "/comments", label: "نظرات", icon: MessageSquare },
+        {
+          href: '/comments?filters=%7B%22targetType%22%3A%22blog%22%7D',
+          label: "نظرات مقالات",
+          icon: MessageSquare,
+        },
+      ],
+    },
+  },
+  {
+    type: "group",
+    group: {
+      id: "messages",
+      label: "پیام‌ها و نظرات",
+      icon: Inbox,
+      items: [
+        { href: "/comments", label: "همه نظرات", icon: MessageSquare },
+        { href: "/contacts", label: "پیام‌های تماس", icon: Inbox },
       ],
     },
   },
@@ -110,7 +131,6 @@ const navEntries: NavEntry[] = [
       items: [
         { href: "/users", label: "کاربران", icon: Users },
         { href: "/roles", label: "نقش‌ها", icon: Shield },
-        { href: "/contacts", label: "پیام‌های تماس", icon: Inbox },
       ],
     },
   },

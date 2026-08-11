@@ -37,6 +37,8 @@ export const Fa = {
   // نظرات / تماس
   commentFieldsRequired: "نام، متن نظر و نوع هدف الزامی است.",
   commentContentRequired: "متن پاسخ الزامی است.",
+  commentTargetInvalid: "هدف نظر (محصول، مقاله یا والد) نامعتبر است.",
+  commentTargetTypeInvalid: "نوع نظر باید محصول، مقاله یا پاسخ باشد.",
   contactMessageRequired: "متن پیام الزامی است.",
 
   // دسته‌بندی

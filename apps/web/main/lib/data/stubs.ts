@@ -48,12 +48,31 @@ type ProductLike = {
   [key: string]: unknown;
 };
 
+type CommentLike = {
+  id?: string;
+  _id?: string;
+  nickName?: string;
+  content?: string;
+  rating?: number | null;
+  createdAt?: string;
+  replies?: CommentLike[];
+  [key: string]: unknown;
+};
+
 function normalizeCategoryTree(nodes: CategoryNode[] = []): CategoryNode[] {
   return nodes.map((node) => ({
     ...node,
     _id: node.id || node._id,
     children: normalizeCategoryTree(node.children || []),
   }));
+}
+
+function normalizeComment(c: CommentLike): CommentLike {
+  return {
+    ...c,
+    _id: c.id || c._id,
+    replies: Array.isArray(c.replies) ? c.replies.map(normalizeComment) : [],
+  };
 }
 
 function normalizeProduct(p: ProductLike) {
@@ -355,16 +374,42 @@ export async function listBlogs(_params?: {
   return emptyList();
 }
 
-export async function getProductComments(_productId: string) {
-  return emptyList();
+export async function getProductComments(productId: string) {
+  if (!productId) return emptyList();
+  const res = await apiJson<{ content: CommentLike[] }>(
+    `/comments/product/${encodeURIComponent(productId)}`
+  );
+  const list = Array.isArray(res?.content) ? res.content : [];
+  return { content: list.map(normalizeComment), total: list.length };
 }
 
-export async function getBlogComments(_blogId: string) {
-  return emptyList();
+export async function getBlogComments(blogId: string) {
+  if (!blogId) return emptyList();
+  const res = await apiJson<{ content: CommentLike[] }>(
+    `/comments/blog/${encodeURIComponent(blogId)}`
+  );
+  const list = Array.isArray(res?.content) ? res.content : [];
+  return { content: list.map(normalizeComment), total: list.length };
 }
 
-export async function submitComment(_payload: Record<string, unknown>) {
-  return { ok: true as const };
+export async function submitComment(payload: Record<string, unknown>) {
+  const res = await fetch(`${API_BASE.replace(/\/$/, "")}/api/v1/comments`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = (await res.json().catch(() => ({}))) as {
+    message?: string;
+    content?: unknown;
+  };
+  if (!res.ok) {
+    const err = new Error(data.message || "ثبت نظر ناموفق بود") as Error & {
+      response?: { data?: { message?: string } };
+    };
+    err.response = { data: { message: data.message } };
+    throw err;
+  }
+  return { ok: true as const, content: data.content };
 }
 
 export async function submitContact(payload: Record<string, unknown>) {

@@ -410,8 +410,13 @@ export async function publicRoutes(app: FastifyInstance) {
   app.get("/comments/product/:productId", async (request) => {
     const { productId } = request.params as { productId: string };
     const content = await app.prisma.comment.findMany({
-      where: { productId, publish: true, parentId: null },
-      include: { replies: { where: { publish: true } } },
+      where: { productId, publish: true, parentId: null, targetType: "product" },
+      include: {
+        replies: {
+          where: { publish: true },
+          orderBy: { createdAt: "asc" },
+        },
+      },
       orderBy: { createdAt: "desc" },
     });
     return ok(content);
@@ -420,8 +425,13 @@ export async function publicRoutes(app: FastifyInstance) {
   app.get("/comments/blog/:blogId", async (request) => {
     const { blogId } = request.params as { blogId: string };
     const content = await app.prisma.comment.findMany({
-      where: { blogId, publish: true, parentId: null },
-      include: { replies: { where: { publish: true } } },
+      where: { blogId, publish: true, parentId: null, targetType: "blog" },
+      include: {
+        replies: {
+          where: { publish: true },
+          orderBy: { createdAt: "asc" },
+        },
+      },
       orderBy: { createdAt: "desc" },
     });
     return ok(content);
@@ -433,27 +443,77 @@ export async function publicRoutes(app: FastifyInstance) {
       content?: string;
       email?: string;
       website?: string;
-      rating?: number;
+      rating?: number | string;
       targetType?: "product" | "blog" | "comment";
       productId?: string;
       blogId?: string;
       parentId?: string;
+      /** legacy frontend field */
+      target_id?: string;
     };
-    if (!body.nickName || !body.content || !body.targetType) {
+
+    const nickName = String(body.nickName || "").trim();
+    const content = String(body.content || "").trim();
+    const targetType = body.targetType;
+    if (!nickName || !content || !targetType) {
       return reply.badRequest(Fa.commentFieldsRequired);
     }
+    if (!["product", "blog", "comment"].includes(targetType)) {
+      return reply.badRequest(Fa.commentTargetTypeInvalid);
+    }
+
+    const targetId = String(body.target_id || "").trim() || undefined;
+    let productId = body.productId || undefined;
+    let blogId = body.blogId || undefined;
+    let parentId = body.parentId || undefined;
+
+    if (targetType === "product") {
+      productId = productId || targetId;
+      if (!productId) return reply.badRequest(Fa.commentTargetInvalid);
+      const product = await app.prisma.product.findUnique({
+        where: { id: productId },
+        select: { id: true },
+      });
+      if (!product) return reply.badRequest(Fa.commentTargetInvalid);
+    } else if (targetType === "blog") {
+      blogId = blogId || targetId;
+      if (!blogId) return reply.badRequest(Fa.commentTargetInvalid);
+      const blog = await app.prisma.blog.findUnique({
+        where: { id: blogId },
+        select: { id: true },
+      });
+      if (!blog) return reply.badRequest(Fa.commentTargetInvalid);
+    } else {
+      parentId = parentId || targetId;
+      if (!parentId) return reply.badRequest(Fa.commentTargetInvalid);
+      const parent = await app.prisma.comment.findUnique({
+        where: { id: parentId },
+        select: { id: true, productId: true, blogId: true },
+      });
+      if (!parent) return reply.badRequest(Fa.commentTargetInvalid);
+      productId = parent.productId || undefined;
+      blogId = parent.blogId || undefined;
+    }
+
+    const ratingRaw =
+      targetType === "comment" ? null : Number(body.rating);
+    const rating =
+      ratingRaw != null && Number.isFinite(ratingRaw)
+        ? Math.min(5, Math.max(0, ratingRaw))
+        : null;
+
     const comment = await app.prisma.comment.create({
       data: {
-        nickName: body.nickName,
-        content: body.content,
-        email: body.email,
-        website: body.website,
-        rating: body.targetType === "comment" ? null : body.rating,
+        nickName,
+        content,
+        email: body.email ? String(body.email).trim() : null,
+        website: body.website ? String(body.website).trim() : null,
+        rating,
         publish: false,
-        targetType: body.targetType,
-        productId: body.productId,
-        blogId: body.blogId,
-        parentId: body.parentId,
+        targetType,
+        productId: productId || null,
+        blogId: blogId || null,
+        parentId: parentId || null,
       },
     });
     return ok(comment);

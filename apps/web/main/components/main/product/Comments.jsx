@@ -38,6 +38,7 @@ const CommentItem = ({ name, rate, text, date, replies, order = 1, id }) => {
                                         let sendData = {
                                             targetType: "comment",
                                             target_id: id,
+                                            parentId: id,
                                             content: data.find(item => item.id === 'message').value,
                                             nickName: data.find(item => item.id === 'fullName').value,
                                             email: data.find(item => item.id === 'email').value,
@@ -84,7 +85,7 @@ const CommentItem = ({ name, rate, text, date, replies, order = 1, id }) => {
                 replies?.length ?
                     replies.map(item => {
 
-                        return <CommentItem order={2} key={item._id} replies={item.replies} name={item.nickName} rate={item.rating} text={item.content} date={item.createdAt} />
+                        return <CommentItem order={2} key={item._id || item.id} id={item._id || item.id} replies={item.replies} name={item.nickName} rate={item.rating} text={item.content} date={item.createdAt} />
                     })
                     : ''
             }
@@ -97,21 +98,25 @@ const Comments = ({ label, product_id }) => {
         setState(prev => ({ ...prev, loading: true }))
         try {
             const res = await getProductComments(product_id)
-            setState(prev => ({ ...prev, comments: res.content }))
+            setState(prev => ({ ...prev, comments: res.content || [] }))
         } catch (error) {
             UseSwal('error', error.response?.data || error.message);
         }
         setState(prev => ({ ...prev, loading: false }))
     }
     useEffect(() => {
+        if (!product_id) {
+            setState(prev => ({ ...prev, comments: [], loading: false }))
+            return
+        }
         getProductComment()
-    }, [])
+    }, [product_id])
 
 
     return (
         <div >
             <Title label={label} />
-            <Rating dir="ltr" size="medium" onChange={e => { setState(prev => ({ ...prev, rating: e.target.value })) }} defaultValue={state.rating} />
+            <Rating dir="ltr" size="medium" onChange={e => { setState(prev => ({ ...prev, rating: e.target.value })) }} defaultValue={Number(state.rating) || 3} />
             <div className="flex flex-col md:flex-row items-start gap-5">
 
                 <Form
@@ -123,15 +128,12 @@ const Comments = ({ label, product_id }) => {
                             let sendData = {
                                 targetType: "product",
                                 target_id: product_id,
+                                productId: product_id,
                                 content: data.find(item => item.id === 'message').value,
                                 nickName: data.find(item => item.id === 'fullName').value,
                                 email: data.find(item => item.id === 'email').value,
                                 website: data.find(item => item.id === 'website').value,
-                                rating: state.rating,
-                            }
-                            if (state.rating === '0') {
-
-                                delete data.rating
+                                rating: Number(state.rating) || undefined,
                             }
                             await submitComment(sendData)
                             UseSwal('success', 'نظر شما با موفقیت ثبت شد و پس از تایید منتشر میشود')
@@ -150,7 +152,7 @@ const Comments = ({ label, product_id }) => {
                             state.comments.map(item => {
 
 
-                                return <CommentItem id={item._id} key={item._id} replies={item.replies} name={item.nickName} rate={item.rating} text={item.content} date={item.createdAt} />
+                                return <CommentItem id={item._id || item.id} key={item._id || item.id} replies={item.replies} name={item.nickName} rate={item.rating} text={item.content} date={item.createdAt} />
                             })
                             :
                             <div className="w-full border rounded-2xl h-full p-20 flex items-center justify-center border-gray-200 text-xs">
