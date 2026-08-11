@@ -57,7 +57,10 @@ export function useServerQuery(defaults?: Partial<ServerQueryState>) {
   );
 
   const setQuery = useCallback(
-    (patch: Partial<ServerQueryState>, options?: { resetPage?: boolean }) => {
+    (
+      patch: Partial<ServerQueryState>,
+      options?: { resetPage?: boolean; scroll?: boolean }
+    ) => {
       const next = new URLSearchParams(searchParams.toString());
       const merged: ServerQueryState = {
         ...state,
@@ -79,7 +82,9 @@ export function useServerQuery(defaults?: Partial<ServerQueryState>) {
       if (Object.keys(cleaned).length) next.set("filters", JSON.stringify(cleaned));
       else next.delete("filters");
 
-      router.replace(`${pathname}?${next.toString()}`);
+      router.replace(`${pathname}?${next.toString()}`, {
+        scroll: options?.scroll ?? true,
+      });
     },
     [pathname, router, searchParams, state]
   );

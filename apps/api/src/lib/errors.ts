@@ -73,7 +73,7 @@ const ENTITY_LABEL: Record<string, string> = {
   blog_category: "دسته‌بندی وبلاگ",
   comment: "نظر",
   cms_page: "صفحه",
-  cms_region: "منطقه CMS",
+  site_settings: "تنظیمات سایت",
   content_block: "بلوک محتوا",
   seo: "سئو",
   media: "رسانه",

@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ImageIcon, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
@@ -26,8 +27,9 @@ import {
   queryDraftToPayload,
   type EntityQueryDraft,
 } from "@/components/cms/entity-query-editor";
-import { MediaPicker } from "@/components/media/media-picker";
+import { MediaField } from "@/components/media/media-field";
 import { mediaUrl } from "@/lib/utils";
+import { toMediaRef } from "@agrohome/shared";
 
 export type InspectorBlock = {
   id: string;
@@ -45,6 +47,7 @@ type SectionInspectorProps = {
   busy: boolean;
   onSave: (patch: Partial<InspectorBlock>) => void;
   onDelete: () => void;
+  onSelectPath?: (path: string | null) => void;
 };
 
 export function SectionInspector({
@@ -53,6 +56,7 @@ export function SectionInspector({
   busy,
   onSave,
   onDelete,
+  onSelectPath,
 }: SectionInspectorProps) {
   const path = selection?.path ?? null;
   const slot = block ? findSlotForPath(block.type, path) : null;
@@ -96,12 +100,17 @@ export function SectionInspector({
   const title = useMemo(() => {
     if (!block) return "انتخاب نشده";
     if (!path) return block.name || blockTypeLabel(block.type);
+    if (slot?.kind === "list" && isListItemPath(path)) {
+      const match = path.match(/\.(\d+)$/);
+      const index = match ? Number(match[1]) : 0;
+      return `${slot.itemLabel || slot.label} ${index + 1}`;
+    }
     return slot?.label || path;
   }, [block, path, slot]);
 
   if (!block) {
     return (
-      <div className="flex h-full flex-col items-center justify-center p-6 text-center" dir="rtl">
+      <div className="flex h-full min-h-0 flex-col items-center justify-center p-6 text-center" dir="rtl">
         <p className="text-sm font-medium">چیزی انتخاب نشده</p>
         <p className="mt-1 text-xs text-[var(--admin-muted)]">
           یک سکشن یا زیر‌المان را از بوم یا ساختار انتخاب کنید.
@@ -138,8 +147,8 @@ export function SectionInspector({
   }
 
   return (
-    <div className="flex h-full flex-col" dir="rtl">
-      <div className="border-b border-[var(--admin-border)] px-4 py-3">
+    <div className="flex h-full min-h-0 flex-col" dir="rtl">
+      <div className="shrink-0 border-b border-[var(--admin-border)] px-4 py-3">
         <p className="text-sm font-semibold">{title}</p>
         <p className="text-xs text-[var(--admin-muted)]">
           {blockTypeLabel(block.type)}
@@ -147,7 +156,7 @@ export function SectionInspector({
         </p>
       </div>
 
-      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4">
         {!path ? (
           <>
             <div className="space-y-2">
@@ -175,9 +184,14 @@ export function SectionInspector({
                 </p>
                 <div className="space-y-1">
                   {getSlots(block.type).map((s) => (
-                    <p key={s.id} className="text-xs text-[var(--admin-muted)]">
+                    <button
+                      key={s.id}
+                      type="button"
+                      className="block w-full rounded-md px-2 py-1.5 text-start text-xs text-[var(--admin-muted)] transition hover:bg-[var(--admin-bg)] hover:text-[var(--admin-fg)]"
+                      onClick={() => onSelectPath?.(s.path)}
+                    >
                       • {s.label}
-                    </p>
+                    </button>
                   ))}
                 </div>
               </>
@@ -194,7 +208,20 @@ export function SectionInspector({
             onChange={setListDraft}
           />
         ) : slot?.kind === "list" && isListItemPath(path) ? (
-          <ListItemEditor slot={slot} value={draft} onChange={setDraft} />
+          <div className="space-y-3">
+            {onSelectPath && slot.path ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-8 px-2 text-xs"
+                onClick={() => onSelectPath(slot.path)}
+              >
+                ← همه {slot.label}
+              </Button>
+            ) : null}
+            <ListItemEditor slot={slot} value={draft} onChange={setDraft} />
+          </div>
         ) : slot?.kind === "group" ? (
           <GroupEditor
             fields={slot.fields || []}
@@ -211,7 +238,7 @@ export function SectionInspector({
         )}
       </div>
 
-      <div className="border-t border-[var(--admin-border)] p-3">
+      <div className="shrink-0 border-t border-[var(--admin-border)] bg-[var(--admin-surface)] p-3">
         <Button type="button" className="w-full" disabled={busy} onClick={savePathValue}>
           ذخیره
         </Button>
@@ -231,8 +258,6 @@ function FieldControl({
   value: unknown;
   onChange: (v: unknown) => void;
 }) {
-  const [pickerOpen, setPickerOpen] = useState(false);
-
   if (kind === "textarea") {
     return (
       <div className="space-y-2">
@@ -241,6 +266,18 @@ function FieldControl({
           value={String(value ?? "")}
           onChange={(e) => onChange(e.target.value)}
           className="min-h-[120px]"
+        />
+      </div>
+    );
+  }
+  if (kind === "richtext") {
+    return (
+      <div className="space-y-2">
+        <Label>{label}</Label>
+        <RichTextEditor
+          value={String(value ?? "")}
+          onChange={(html) => onChange(html)}
+          height={260}
         />
       </div>
     );
@@ -279,60 +316,12 @@ function FieldControl({
     );
   }
   if (kind === "image") {
-    const media =
-      value && typeof value === "object" && !Array.isArray(value)
-        ? (value as { url?: string; alt?: string | null })
-        : typeof value === "string" && value
-          ? { url: value, alt: null }
-          : null;
-    const url = media?.url || "";
-    const preview = mediaUrl(url);
     return (
-      <div className="space-y-3 rounded-[var(--admin-radius-sm)] border border-[var(--admin-border)] bg-[var(--admin-bg)]/30 p-3">
-        <Label>{label}</Label>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-          <div className="min-w-0 flex-1 space-y-2">
-            <Input
-              value={url}
-              onChange={(e) => {
-                const nextUrl = e.target.value.trim();
-                onChange(nextUrl ? { url: nextUrl, alt: media?.alt ?? null } : null);
-              }}
-              placeholder="URL یا از کتابخانه انتخاب کنید"
-              dir="ltr"
-            />
-          </div>
-          <Button type="button" size="sm" variant="secondary" onClick={() => setPickerOpen(true)}>
-            <ImageIcon className="h-4 w-4" />
-            انتخاب از رسانه
-          </Button>
-        </div>
-        <div className="space-y-2">
-          <Label className="text-xs text-[var(--admin-muted)]">alt</Label>
-          <Input
-            value={media?.alt || ""}
-            onChange={(e) => {
-              if (!url) return;
-              onChange({ url, alt: e.target.value || null });
-            }}
-            placeholder="متن جایگزین"
-            disabled={!url}
-          />
-        </div>
-        {preview ? (
-          <div className="overflow-hidden rounded-lg border border-[var(--admin-border)] bg-black/10">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={preview} alt={media?.alt || ""} className="mx-auto max-h-32 object-contain" />
-          </div>
-        ) : null}
-        {pickerOpen ? (
-          <MediaPicker
-            open={pickerOpen}
-            onOpenChange={setPickerOpen}
-            onSelect={(m) => onChange({ url: m.url, alt: m.alt || null })}
-          />
-        ) : null}
-      </div>
+      <MediaField
+        label={label}
+        value={value}
+        onChange={(next) => onChange(next)}
+      />
     );
   }
   return (
@@ -380,16 +369,21 @@ function ListEditor({
   items: unknown[];
   onChange: (items: unknown[]) => void;
 }) {
+  const [focusedIndex, setFocusedIndex] = useState(0);
   const primitive = isPrimitiveList(slot);
+  const isImageList =
+    primitive && (slot.itemFields?.[0]?.kind || "") === "image";
 
   function addItem() {
+    const nextIndex = items.length;
     if (primitive) {
-      onChange([...items, ""]);
+      onChange([...items, isImageList ? null : ""]);
     } else {
       const blank: Record<string, unknown> = {};
       for (const f of slot.itemFields || []) blank[f.key] = "";
       onChange([...items, blank]);
     }
+    if (isImageList) setFocusedIndex(nextIndex);
   }
 
   return (
@@ -401,49 +395,131 @@ function ListEditor({
           افزودن
         </Button>
       </div>
-      {items.map((item, index) => (
-        <div
-          key={index}
-          className="space-y-2 rounded-[var(--admin-radius-sm)] border border-[var(--admin-border)] p-3"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-[var(--admin-muted)]">
-              {slot.itemLabel || "آیتم"} {index + 1}
-            </span>
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              className="h-7 w-7"
-              onClick={() => onChange(items.filter((_, i) => i !== index))}
-            >
-              <Trash2 className="h-3.5 w-3.5 text-[var(--admin-danger)]" />
-            </Button>
-          </div>
-          {primitive ? (
-            <FieldControl
-              kind={slot.itemFields?.[0]?.kind || "text"}
-              label={slot.itemFields?.[0]?.label || "مقدار"}
-              value={item}
-              onChange={(v) => {
-                const next = [...items];
-                next[index] = v;
-                onChange(next);
-              }}
-            />
-          ) : (
-            <GroupEditor
-              fields={slot.itemFields || []}
-              value={(item as Record<string, unknown>) || {}}
-              onChange={(v) => {
-                const next = [...items];
-                next[index] = v;
-                onChange(next);
-              }}
-            />
-          )}
+
+      {isImageList && items.length > 0 ? (
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {items.map((item, index) => {
+            const ref = toMediaRef(item);
+            const preview = mediaUrl(ref?.url);
+            const active = focusedIndex === index;
+            return (
+              <div
+                key={index}
+                className={`group relative overflow-hidden rounded-[var(--admin-radius-sm)] border bg-[var(--admin-bg)]/40 ${
+                  active
+                    ? "border-[var(--admin-accent)] ring-2 ring-[var(--admin-accent)]/40"
+                    : "border-[var(--admin-border)]"
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() => setFocusedIndex(index)}
+                  className="block w-full text-start"
+                  title={`تصویر ${index + 1}`}
+                >
+                  <div className="aspect-square bg-black/10">
+                    {preview ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={preview}
+                        alt={ref?.alt || ""}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-[10px] text-[var(--admin-muted)]">
+                        خالی
+                      </div>
+                    )}
+                  </div>
+                  <span className="absolute bottom-1 start-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                    {slot.itemLabel || "تصویر"} {index + 1}
+                  </span>
+                </button>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="absolute top-1 end-1 h-7 w-7 bg-black/40 text-white hover:bg-black/60"
+                  onClick={() => {
+                    onChange(items.filter((_, i) => i !== index));
+                    setFocusedIndex((prev) =>
+                      prev > index ? prev - 1 : Math.min(prev, Math.max(0, items.length - 2))
+                    );
+                  }}
+                  title="حذف"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            );
+          })}
         </div>
-      ))}
+      ) : null}
+
+      {isImageList && items.length > 0 ? (
+        <div className="space-y-2 rounded-[var(--admin-radius-sm)] border border-[var(--admin-accent)]/40 bg-[var(--admin-bg)]/20 p-3">
+          <p className="text-xs font-medium text-[var(--admin-accent)]">
+            در حال ویرایش: {slot.itemLabel || "تصویر"} {focusedIndex + 1}
+          </p>
+          <FieldControl
+            kind="image"
+            label={slot.itemFields?.[0]?.label || "تصویر"}
+            value={items[focusedIndex]}
+            onChange={(v) => {
+              const next = [...items];
+              next[focusedIndex] = v;
+              onChange(next);
+            }}
+          />
+        </div>
+      ) : null}
+
+      {!isImageList
+        ? items.map((item, index) => (
+            <div
+              key={index}
+              className="space-y-2 rounded-[var(--admin-radius-sm)] border border-[var(--admin-border)] p-3"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-[var(--admin-muted)]">
+                  {slot.itemLabel || "آیتم"} {index + 1}
+                </span>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7"
+                  onClick={() => onChange(items.filter((_, i) => i !== index))}
+                >
+                  <Trash2 className="h-3.5 w-3.5 text-[var(--admin-danger)]" />
+                </Button>
+              </div>
+              {primitive ? (
+                <FieldControl
+                  kind={slot.itemFields?.[0]?.kind || "text"}
+                  label={slot.itemFields?.[0]?.label || "مقدار"}
+                  value={item}
+                  onChange={(v) => {
+                    const next = [...items];
+                    next[index] = v;
+                    onChange(next);
+                  }}
+                />
+              ) : (
+                <GroupEditor
+                  fields={slot.itemFields || []}
+                  value={(item as Record<string, unknown>) || {}}
+                  onChange={(v) => {
+                    const next = [...items];
+                    next[index] = v;
+                    onChange(next);
+                  }}
+                />
+              )}
+            </div>
+          ))
+        : null}
+
       {items.length === 0 ? (
         <p className="text-xs text-[var(--admin-muted)]">لیست خالی است.</p>
       ) : null}

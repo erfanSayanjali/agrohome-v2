@@ -35,7 +35,6 @@ enum CmsPageStatus {
 
 enum BlockOwnerType {
   PAGE
-  REGION
 }
 
 /// STATIC: UI fields in payload
@@ -271,32 +270,25 @@ model CmsPage {
   @@index([status])
 }
 
-/// Shared site regions (footer, header) composed of the same ContentBlock model.
-model CmsRegion {
-  id                 String        @id @default(cuid())
-  key                String        @unique
-  title              String?
-  status             CmsPageStatus @default(draft)
-  publishedAt        DateTime?
-  revalidateSeconds  Int           @default(600)
-  publishedSnapshot  Json?
-  blocks             ContentBlock[]
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
-
-  @@index([status])
+/// Singleton site branding + footer settings (logo, favicon, socials, footer link groups).
+model SiteSettings {
+  id               String   @id @default("default")
+  logoUrl          String?
+  faviconUrl       String?
+  footerText       String?
+  socialLinks      Json     @default("[]")
+  footerLinkGroups Json     @default("[]")
+  updatedAt        DateTime @updatedAt
 }
 
-/// Page/region block (ابزارک). Exactly one of pageId or regionId should be set (enforced in service layer).
+/// Page block (ابزارک). Belongs to a CmsPage via pageId.
 /// type examples: hero, rich_text, faq, banner, cta, product_grid, blog_grid,
 /// blog_category_grid, comment_list, contact_form, custom
 model ContentBlock {
   id         String          @id @default(cuid())
-  ownerType  BlockOwnerType
+  ownerType  BlockOwnerType  @default(PAGE)
   pageId     String?
   page       CmsPage?        @relation(fields: [pageId], references: [id], onDelete: Cascade)
-  regionId   String?
-  region     CmsRegion?      @relation(fields: [regionId], references: [id], onDelete: Cascade)
   type       String
   name       String?
   sortOrder  Int             @default(0)
@@ -310,7 +302,6 @@ model ContentBlock {
   updatedAt  DateTime        @updatedAt
 
   @@index([pageId, sortOrder])
-  @@index([regionId, sortOrder])
   @@index([type, isVisible])
 }
 

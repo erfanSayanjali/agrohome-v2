@@ -143,9 +143,14 @@ export default function ProductsPage() {
         rowKey={(row) => row.id}
         filters={list.state.filters}
         onFiltersChange={(next) => list.setQuery({ filters: next }, { resetPage: true })}
+        paginationMode={list.paginationMode}
+        loadingMore={list.loadingMore}
+        hasMore={list.hasMore}
+        onLoadMore={list.loadMore}
         sortable
         onReorder={async (ordered) => {
-          const base = (list.state.page - 1) * list.state.limit;
+          const base =
+            list.paginationMode === "infinite" ? 0 : (list.state.page - 1) * list.state.limit;
           try {
             await apiPut("/admin/products/reorder", {
               items: ordered.map((row, index) => ({

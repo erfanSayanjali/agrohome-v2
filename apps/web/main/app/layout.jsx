@@ -1,5 +1,7 @@
 import localFont from "next/font/local";
 import "./globals.css";
+import { getSiteSettings } from "../lib/data/cms";
+
 const IRANSans = localFont({
   src: [
     {
@@ -29,12 +31,20 @@ const IRANSans = localFont({
     },
   ],
 })
+
+export async function generateMetadata() {
+  const settings = await getSiteSettings();
+  if (!settings.faviconUrl) return {};
+  return {
+    icons: {
+      icon: settings.faviconUrl,
+    },
+  };
+}
+
 export default function RootLayout({children}) {
-  
-
-
   return (
-    <html lang="en" dir="rtl" >
+    <html lang="fa" dir="rtl" >
       <body
       className={IRANSans.className}
       >

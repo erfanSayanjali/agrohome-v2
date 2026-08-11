@@ -17,6 +17,9 @@ node_modules
 .next/
 out/
 
+# self-hosted TinyMCE (copied from node_modules via postinstall)
+apps/web/admin/public/tinymce/
+
 # production
 /build
 dist/

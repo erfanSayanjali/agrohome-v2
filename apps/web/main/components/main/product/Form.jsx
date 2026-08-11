@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, cloneElement, isValidElement } from 'react';
 const Form = ({data = [] , submitBtn , className, onClick}) => {
     const [state, setState] = useState(data)
 
@@ -45,7 +45,14 @@ const Form = ({data = [] , submitBtn , className, onClick}) => {
             }
             {
                 submitBtn ?
-                submitBtn
+                (isValidElement(submitBtn)
+                  ? cloneElement(submitBtn, {
+                      onClick: (e) => {
+                        submitBtn.props?.onClick?.(e);
+                        onClick?.(state);
+                      },
+                    })
+                  : submitBtn)
                 :
                 <button 
                 onClick={()=>{

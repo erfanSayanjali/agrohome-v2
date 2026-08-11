@@ -22,6 +22,35 @@ const seedUploadsDir = join(__dirname, "data", "uploads");
 const appUploadsDir = join(__dirname, "../../uploads");
 
 type Row = Record<string, unknown>;
+type Snapshot = typeof snapshot & {
+  roles: Row[];
+  users: Row[];
+  productCategories: Row[];
+  products: Row[];
+  productCategoryOnProduct: Row[];
+  packages: Row[];
+  specifications: Row[];
+  productSpecifications: Row[];
+  tagCategories: Row[];
+  tags: Row[];
+  productTags: Row[];
+  blogCategories: Row[];
+  blogs: Row[];
+  comments: Row[];
+  cmsPages: Row[];
+  contentBlocks: Row[];
+  siteSettings?: Row | null;
+  seos: Row[];
+  media: Row[];
+  contactMessages: Row[];
+};
+
+const data = snapshot as Snapshot;
+
+function rows<K extends keyof Snapshot>(key: K): Row[] {
+  const value = data[key];
+  return Array.isArray(value) ? (value as Row[]) : [];
+}
 
 function asDate(value: unknown): Date | undefined {
   if (value == null) return undefined;
@@ -86,7 +115,7 @@ async function upsertMany(
 }
 
 async function seedRoles() {
-  await upsertMany("roles", snapshot.roles, (row) =>
+  await upsertMany("roles", rows("roles"), (row) =>
     prisma.role.upsert({
       where: { id: row.id as string },
       create: {
@@ -109,7 +138,7 @@ async function seedRoles() {
 
 async function seedUsers() {
   const adminPassword = process.env.ADMIN_PASSWORD;
-  await upsertMany("users", snapshot.users, async (row) => {
+  await upsertMany("users", rows("users"), async (row) => {
     let passwordHash = (row.passwordHash as string | null) ?? null;
     if (adminPassword && (row.phone as string) === (process.env.ADMIN_PHONE || "09120000000")) {
       passwordHash = await hashPassword(adminPassword);
@@ -145,8 +174,10 @@ async function seedUsers() {
 }
 
 async function seedProductCategories() {
-  const rows = sortByParent(snapshot.productCategories);
-  await upsertMany("productCategories", rows, (row) =>
+  const sorted = sortByParent(
+    rows("productCategories") as Array<Row & { id: string; parentId?: string | null }>,
+  );
+  await upsertMany("productCategories", sorted, (row) =>
     prisma.productCategory.upsert({
       where: { id: row.id as string },
       create: {
@@ -176,7 +207,7 @@ async function seedProductCategories() {
 }
 
 async function seedProducts() {
-  await upsertMany("products", snapshot.products, (row) =>
+  await upsertMany("products", rows("products"), (row) =>
     prisma.product.upsert({
       where: { id: row.id as string },
       create: {
@@ -214,7 +245,7 @@ async function seedProducts() {
 }
 
 async function seedProductCategoryLinks() {
-  await upsertMany("productCategoryOnProduct", snapshot.productCategoryOnProduct, (row) =>
+  await upsertMany("productCategoryOnProduct", rows("productCategoryOnProduct"), (row) =>
     prisma.productCategoryOnProduct.upsert({
       where: {
         productId_categoryId: {
@@ -232,7 +263,7 @@ async function seedProductCategoryLinks() {
 }
 
 async function seedPackages() {
-  await upsertMany("packages", snapshot.packages, (row) =>
+  await upsertMany("packages", rows("packages"), (row) =>
     prisma.package.upsert({
       where: { id: row.id as string },
       create: {
@@ -258,7 +289,7 @@ async function seedPackages() {
 }
 
 async function seedSpecifications() {
-  await upsertMany("specifications", snapshot.specifications, (row) =>
+  await upsertMany("specifications", rows("specifications"), (row) =>
     prisma.specification.upsert({
       where: { id: row.id as string },
       create: {
@@ -280,7 +311,7 @@ async function seedSpecifications() {
 }
 
 async function seedProductSpecifications() {
-  await upsertMany("productSpecifications", snapshot.productSpecifications, (row) =>
+  await upsertMany("productSpecifications", rows("productSpecifications"), (row) =>
     prisma.productSpecification.upsert({
       where: { id: row.id as string },
       create: {
@@ -308,7 +339,7 @@ async function seedProductSpecifications() {
 }
 
 async function seedTagCategories() {
-  await upsertMany("tagCategories", snapshot.tagCategories, (row) =>
+  await upsertMany("tagCategories", rows("tagCategories"), (row) =>
     prisma.tagCategory.upsert({
       where: { id: row.id as string },
       create: {
@@ -330,7 +361,7 @@ async function seedTagCategories() {
 }
 
 async function seedTags() {
-  await upsertMany("tags", snapshot.tags, (row) =>
+  await upsertMany("tags", rows("tags"), (row) =>
     prisma.tag.upsert({
       where: { id: row.id as string },
       create: {
@@ -354,7 +385,7 @@ async function seedTags() {
 }
 
 async function seedProductTags() {
-  await upsertMany("productTags", snapshot.productTags, (row) =>
+  await upsertMany("productTags", rows("productTags"), (row) =>
     prisma.productTag.upsert({
       where: {
         productId_tagId: {
@@ -372,8 +403,10 @@ async function seedProductTags() {
 }
 
 async function seedBlogCategories() {
-  const rows = sortByParent(snapshot.blogCategories);
-  await upsertMany("blogCategories", rows, (row) =>
+  const sorted = sortByParent(
+    rows("blogCategories") as Array<Row & { id: string; parentId?: string | null }>,
+  );
+  await upsertMany("blogCategories", sorted, (row) =>
     prisma.blogCategory.upsert({
       where: { id: row.id as string },
       create: {
@@ -403,7 +436,7 @@ async function seedBlogCategories() {
 }
 
 async function seedBlogs() {
-  await upsertMany("blogs", snapshot.blogs, (row) =>
+  await upsertMany("blogs", rows("blogs"), (row) =>
     prisma.blog.upsert({
       where: { id: row.id as string },
       create: {
@@ -435,11 +468,11 @@ async function seedBlogs() {
 }
 
 async function seedComments() {
-  const comments = snapshot.comments as Array<Row & { id: string; parentId?: string | null }>;
-  const rows = sortByParent(
+  const comments = rows("comments") as Array<Row & { id: string; parentId?: string | null }>;
+  const sorted = sortByParent(
     comments.map((c) => ({ ...c, parentId: c.parentId ?? null })),
   );
-  await upsertMany("comments", rows, (row) =>
+  await upsertMany("comments", sorted, (row) =>
     prisma.comment.upsert({
       where: { id: row.id as string },
       create: {
@@ -477,7 +510,7 @@ async function seedComments() {
 }
 
 async function seedCmsPages() {
-  await upsertMany("cmsPages", snapshot.cmsPages, (row) =>
+  await upsertMany("cmsPages", rows("cmsPages"), (row) =>
     prisma.cmsPage.upsert({
       where: { id: row.id as string },
       create: {
@@ -504,43 +537,14 @@ async function seedCmsPages() {
   );
 }
 
-async function seedCmsRegions() {
-  await upsertMany("cmsRegions", snapshot.cmsRegions, (row) =>
-    prisma.cmsRegion.upsert({
-      where: { id: row.id as string },
-      create: {
-        id: row.id as string,
-        key: row.key as string,
-        title: (row.title as string | null) ?? null,
-        status: row.status as "draft" | "published" | "archived",
-        publishedAt: (row.publishedAt as Date | null) ?? null,
-        revalidateSeconds: Number(row.revalidateSeconds ?? 600),
-        publishedSnapshot: asNullableJson(row.publishedSnapshot),
-        createdAt: row.createdAt as Date,
-        updatedAt: row.updatedAt as Date,
-      },
-      update: {
-        key: row.key as string,
-        title: (row.title as string | null) ?? null,
-        status: row.status as "draft" | "published" | "archived",
-        publishedAt: (row.publishedAt as Date | null) ?? null,
-        revalidateSeconds: Number(row.revalidateSeconds ?? 600),
-        publishedSnapshot: asNullableJson(row.publishedSnapshot),
-        updatedAt: row.updatedAt as Date,
-      },
-    }),
-  );
-}
-
 async function seedContentBlocks() {
-  await upsertMany("contentBlocks", snapshot.contentBlocks, (row) =>
+  await upsertMany("contentBlocks", rows("contentBlocks"), (row) =>
     prisma.contentBlock.upsert({
       where: { id: row.id as string },
       create: {
         id: row.id as string,
-        ownerType: row.ownerType as "PAGE" | "REGION",
+        ownerType: "PAGE",
         pageId: (row.pageId as string | null) ?? null,
-        regionId: (row.regionId as string | null) ?? null,
         type: row.type as string,
         name: (row.name as string | null) ?? null,
         sortOrder: Number(row.sortOrder ?? 0),
@@ -552,9 +556,8 @@ async function seedContentBlocks() {
         updatedAt: row.updatedAt as Date,
       },
       update: {
-        ownerType: row.ownerType as "PAGE" | "REGION",
+        ownerType: "PAGE",
         pageId: (row.pageId as string | null) ?? null,
-        regionId: (row.regionId as string | null) ?? null,
         type: row.type as string,
         name: (row.name as string | null) ?? null,
         sortOrder: Number(row.sortOrder ?? 0),
@@ -568,8 +571,31 @@ async function seedContentBlocks() {
   );
 }
 
+async function seedSiteSettings() {
+  const row = data.siteSettings;
+  if (!row) return;
+  await prisma.siteSettings.upsert({
+    where: { id: "default" },
+    create: {
+      id: "default",
+      logoUrl: (row.logoUrl as string | null) ?? null,
+      faviconUrl: (row.faviconUrl as string | null) ?? null,
+      footerText: (row.footerText as string | null) ?? null,
+      socialLinks: asJson(row.socialLinks ?? []),
+      footerLinkGroups: asJson(row.footerLinkGroups ?? []),
+    },
+    update: {
+      logoUrl: (row.logoUrl as string | null) ?? null,
+      faviconUrl: (row.faviconUrl as string | null) ?? null,
+      footerText: (row.footerText as string | null) ?? null,
+      socialLinks: asJson(row.socialLinks ?? []),
+      footerLinkGroups: asJson(row.footerLinkGroups ?? []),
+    },
+  });
+}
+
 async function seedSeos() {
-  await upsertMany("seos", snapshot.seos, (row) =>
+  await upsertMany("seos", rows("seos"), (row) =>
     prisma.seo.upsert({
       where: { id: row.id as string },
       create: {
@@ -603,7 +629,7 @@ async function seedSeos() {
 }
 
 async function seedMedia() {
-  await upsertMany("media", snapshot.media, (row) =>
+  await upsertMany("media", rows("media"), (row) =>
     prisma.media.upsert({
       where: { id: row.id as string },
       create: {
@@ -633,7 +659,7 @@ async function seedMedia() {
 }
 
 async function seedContactMessages() {
-  await upsertMany("contactMessages", snapshot.contactMessages, (row) =>
+  await upsertMany("contactMessages", rows("contactMessages"), (row) =>
     prisma.contactMessage.upsert({
       where: { id: row.id as string },
       create: {
@@ -676,8 +702,9 @@ function restoreUploadFiles() {
 }
 
 async function main() {
-  console.log(`Seeding from snapshot (${snapshot.exportedAt})…`);
+  console.log(`Seeding from snapshot (${(snapshot as { exportedAt?: string }).exportedAt ?? "unknown"})…`);
 
+  // Order matters: parents / FKs first.
   await seedRoles();
   await seedUsers();
   await seedProductCategories();
@@ -693,16 +720,20 @@ async function main() {
   await seedBlogs();
   await seedComments();
   await seedCmsPages();
-  await seedCmsRegions();
   await seedContentBlocks();
+  await seedSiteSettings();
   await seedSeos();
   await seedMedia();
   await seedContactMessages();
   restoreUploadFiles();
 
   const adminPhone =
-    snapshot.users[0]?.phone || process.env.ADMIN_PHONE || "09120000000";
-  console.log(`Done. Admin phone=${adminPhone} (password from snapshot unless ADMIN_PASSWORD is set)`);
+    (rows("users")[0]?.phone as string | undefined) ||
+    process.env.ADMIN_PHONE ||
+    "09120000000";
+  console.log(
+    `Done. Admin phone=${adminPhone} (password from snapshot unless ADMIN_PASSWORD is set)`,
+  );
 }
 
 main()

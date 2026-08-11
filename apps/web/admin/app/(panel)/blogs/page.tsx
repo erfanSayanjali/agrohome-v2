@@ -63,7 +63,7 @@ export default function BlogsPage() {
       fields={[
         { name: "title", label: "عنوان", required: true },
         { name: "slug", label: "اسلاگ", required: true, dir: "ltr" },
-        { name: "content", label: "محتوا", type: "textarea" },
+        { name: "content", label: "محتوا", type: "richtext" },
         { name: "media", label: "تصویر", type: "media" },
         {
           name: "categoryId",

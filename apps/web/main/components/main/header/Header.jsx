@@ -8,12 +8,14 @@ import { FaPhone } from 'react-icons/fa';
 import Link from 'next/link.js';
 import { useIsMobile } from '../../../utils/UseIsMobile.tsx'
 import MobileMenu from './MobileMenu.jsx';
+import { mediaUrl } from '../../../lib/data/stubs';
 
 
-const Header = ({ product_category }) => {
+const Header = ({ product_category, logoUrl }) => {
     const pathname = usePathname()
     const isHome = pathname === '/';
     const isMobile = useIsMobile(766)
+    const logo = mediaUrl(logoUrl) || '/logo.png'
 
 
     return (
@@ -22,12 +24,13 @@ const Header = ({ product_category }) => {
 
             <div className={` ${!isHome ? 'bg-[#105238]!' : ''} z-50  glass-card static! justify-between md:justify-start rounded-none! md:rounded-3xl! flex items-center gap-4 h-full w-full  xl:w-[50%] md:px-8 px-3 `}>
 
-                <MobileMenu />
+                <MobileMenu product_category={product_category} logoUrl={logoUrl} />
 
                 <Link href={'/'}>
                 <Image
                     className='xl:w-[140px] w-[100px] justify-self-end!'
-                    src={'/logo.png'} width={150} height={30} alt='logo-header' />
+                    src={logo} width={150} height={30} alt='logo-header'
+                    unoptimized={String(logo).includes('/uploads/')} />
                 </Link>
                 {<span className='h-5 hidden  md:block w-px bg-gray-200' ></span>}
                 {isMobile ? '' : <NavBar product_category={product_category} />}
@@ -37,7 +40,7 @@ const Header = ({ product_category }) => {
                 <Search isHome={isHome} />
                 </Suspense>
                 <Link href={'/contact'} className='bg-[#F4C111] hidden xl:flex  items-center w-[140px]  h-full px-4 text-sm rounded-3xl border font-bold border-white'>
-                    <FaPhone className='inline ms-2' />
+                    <FaPhone className='inline ml-2' />
                     تماس با ما
                 </Link>
             </div>}

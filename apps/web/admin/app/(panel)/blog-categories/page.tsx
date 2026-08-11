@@ -38,7 +38,7 @@ export default function BlogCategoriesPage() {
       fields={[
         { name: "title", label: "عنوان", required: true },
         { name: "slug", label: "اسلاگ", required: true, dir: "ltr" },
-        { name: "description", label: "توضیحات", type: "textarea" },
+        { name: "description", label: "توضیحات", type: "richtext" },
         { name: "media", label: "تصویر", type: "media" },
         {
           name: "parentId",

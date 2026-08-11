@@ -33,13 +33,13 @@ const NewestProducts = ({ products = [], cms } = {}) => {
           alt="newProductBackground"
           width={500}
           height={200}
-          className="w-full -z-10 object-cover h-[220px] absolute top-0"
+          className="w-full -z-10 object-cover h-[180px] md:h-[220px] absolute top-0"
         />
-        <div className="w-full h-[220px] -z-10 absolute top-0 bg-green-950/70" />
-        <div className="max-w-7xl mx-auto pt-10 px-3 md:px-0">
+        <div className="w-full h-[180px] md:h-[220px] -z-10 absolute top-0 bg-green-950/70" />
+        <div className="max-w-7xl mx-auto pt-8 md:pt-10 px-3 md:px-0">
           {list.length ? (
             <Slider
-              gap={20}
+              gap={16}
               width="fit-content"
               slides={list.map((product) => (
                 <ProductCard

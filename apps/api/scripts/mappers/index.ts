@@ -61,7 +61,7 @@ export function mapProduct(item: Record<string, unknown>) {
     legacyId: legacyId(item),
     title: asString(item.title),
     slug: asString(item.slug),
-    subtitle: asOptionalString(item.subtitle),
+    subtitle: asOptionalString(item.subtitle ?? item.subTitle),
     description: asOptionalString(item.description),
     media: mediaRef(item.thumbnail_id),
     gallery: Array.isArray(item.gallery)

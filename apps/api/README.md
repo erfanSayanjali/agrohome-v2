@@ -14,6 +14,14 @@ pnpm db:seed
 pnpm dev
 ```
 
+`db:seed` restores a **full backup** from `src/seeds/data/snapshot.json` + `src/seeds/data/uploads/` (catalog, blogs, CMS pages/blocks, SEO, site settings, media files, admin user, …). OTP challenges are not included.
+
+To refresh the committed backup from your current DB:
+
+```bash
+pnpm db:export-seed
+```
+
 API: `http://localhost:3002`
 
 ## Env
@@ -39,7 +47,7 @@ API: `http://localhost:3002`
 
 - Catalog: `product-categories`, `products`, `packages`, `specifications`, `product-specifications`, `tags`, `tag-categories`
 - Blog: `blog-categories`, `blogs`, `comments`
-- CMS: `pages`, `regions`, `blocks`, `POST .../publish`, `GET pages/:id/editor`
+- CMS: `pages`, `blocks`, `POST .../publish`, `GET pages/:id/editor`, `GET/PUT site-settings`
 - Misc: `seo`, `media` (+ `POST media/upload`), `roles`, `users`, `contact-messages`
 - Stats: `GET /admin/stats` — lightweight counters only (`products`, `blogs`, `commentsPending`, `contactsNew`, `pages`, `media`, `users`, `categories`)
 
@@ -68,7 +76,7 @@ Response shape:
 
 ## Public API (`/api/v1/*`)
 
-- `GET /pages/:slug`, `GET /regions/:key`, `POST /blocks/resolve`
+- `GET /pages/:slug`, `GET /site-settings`, `POST /blocks/resolve`
 - Products / categories / blogs / comments / contact / seo
 
 ## Smoke

@@ -9,6 +9,8 @@ import {
   isEntityQueryBlock,
   type EntityType,
 } from "@/lib/cms-blocks";
+import { cn, mediaUrl } from "@/lib/utils";
+import { toMediaRef } from "@agrohome/shared";
 
 type Block = {
   type: string;
@@ -20,6 +22,60 @@ type Block = {
 
 function str(v: unknown, fallback = "") {
   return v == null || v === "" ? fallback : String(v);
+}
+
+function imageSrc(v: unknown, fallback = "") {
+  const ref = toMediaRef(v);
+  if (ref?.url) return mediaUrl(ref.url) || fallback;
+  if (typeof v === "string" && v) return mediaUrl(v) || fallback;
+  return fallback;
+}
+
+function asImageList(raw: unknown, minCount = 0, fallbacks: string[] = []): string[] {
+  const list = Array.isArray(raw) ? raw : [];
+  const mapped = list.map((item, i) => imageSrc(item, fallbacks[i] || "")).filter(Boolean);
+  if (mapped.length >= minCount) return mapped;
+  const out = [...mapped];
+  while (out.length < minCount) {
+    out.push(fallbacks[out.length] || "");
+  }
+  return out;
+}
+
+function ClickableImage({
+  path,
+  selected,
+  onSelectPath,
+  label,
+  src,
+  className,
+  imgClassName,
+}: {
+  path: string;
+  selected: boolean;
+  onSelectPath: (path: string | null) => void;
+  label: string;
+  src: string;
+  className?: string;
+  imgClassName?: string;
+}) {
+  return (
+    <Hotspot path={path} selected={selected} onSelect={onSelectPath} label={label} className={className}>
+      <div className={cn("relative h-full w-full overflow-hidden bg-[#dfe8e2]", imgClassName)}>
+        {src ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={src} alt="" className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full min-h-[4rem] w-full items-center justify-center text-[10px] text-black/40">
+            {label}
+          </div>
+        )}
+        <span className="pointer-events-none absolute bottom-1 start-1 rounded bg-black/55 px-1.5 py-0.5 text-[10px] font-medium text-white">
+          {label}
+        </span>
+      </div>
+    </Hotspot>
+  );
 }
 
 type SectionCanvasProps = {
@@ -57,7 +113,7 @@ export function SectionCanvas({
         >
           <div
             className="absolute inset-0 bg-cover bg-center opacity-50"
-            style={{ backgroundImage: `url(${str(payload.image, "/homeheader.jpg")})` }}
+            style={{ backgroundImage: `url(${imageSrc(payload.image, "/homeheader.jpg")})` }}
           />
         </Hotspot>
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#00160E] to-transparent" />
@@ -122,6 +178,11 @@ export function SectionCanvas({
           .map((b) => (typeof b === "string" ? b : String((b as { _value?: string })?._value || "")))
           .filter(Boolean)
       : [];
+    const images = asImageList(payload.images, 3, [
+      "/homeheader.jpg",
+      "/a1.png",
+      "/a2.png",
+    ]);
 
     return (
       <div
@@ -129,14 +190,35 @@ export function SectionCanvas({
         dir="rtl"
         onClick={() => onSelectPath(null)}
       >
-        <Hotspot path="images" selected={sel("images")} onSelect={onSelectPath} label="تصاویر">
-          {/* ارتفاع ثابت — بدون وابستگی به تصویر خارجی (در ادمین 404 می‌شد) */}
-          <div className="grid h-[280px] grid-cols-2 grid-rows-[1fr_1.4fr] gap-3">
-            <div className="rounded-3xl rounded-tr-[80px] bg-[#c8d6c2]" />
-            <div className="row-span-2 rounded-r-3xl rounded-l-[90px] bg-[#9fb897]" />
-            <div className="w-4/5 justify-self-end rounded-3xl rounded-b-[60px] bg-[#b4c7ac]" />
-          </div>
-        </Hotspot>
+        <div className="grid h-[280px] grid-cols-2 grid-rows-[1fr_1.4fr] gap-3">
+          <ClickableImage
+            path="images.0"
+            selected={sel("images.0") || sel("images")}
+            onSelectPath={onSelectPath}
+            label="تصویر ۱"
+            src={images[0]}
+            className="h-full"
+            imgClassName="rounded-3xl rounded-tr-[80px]"
+          />
+          <ClickableImage
+            path="images.1"
+            selected={sel("images.1") || sel("images")}
+            onSelectPath={onSelectPath}
+            label="تصویر ۲"
+            src={images[1]}
+            className="row-span-2 h-full"
+            imgClassName="rounded-r-3xl rounded-l-[90px]"
+          />
+          <ClickableImage
+            path="images.2"
+            selected={sel("images.2") || sel("images")}
+            onSelectPath={onSelectPath}
+            label="تصویر ۳"
+            src={images[2]}
+            className="w-4/5 justify-self-end"
+            imgClassName="rounded-3xl rounded-b-[60px]"
+          />
+        </div>
         <div className="space-y-4">
           <Hotspot path="title" selected={sel("title")} onSelect={onSelectPath} label="عنوان">
             <p className="text-2xl font-extrabold text-black">
@@ -200,7 +282,7 @@ export function SectionCanvas({
         <Hotspot path="image" selected={sel("image")} onSelect={onSelectPath} label="تصویر" className="absolute inset-0">
           <div
             className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url(${str(payload.image, "/b1.jpg")})` }}
+            style={{ backgroundImage: `url(${imageSrc(payload.image, "/b1.jpg")})` }}
           />
           <div className="absolute inset-0 bg-black/40" />
         </Hotspot>
@@ -227,15 +309,30 @@ export function SectionCanvas({
     const items = Array.isArray(payload.items)
       ? (payload.items as Array<{ title?: string }>)
       : [];
+    const images = asImageList(payload.images, 2, ["/faq1.png", "/faq2.png"]);
     return (
       <div className="bg-[#123833] px-6 py-12 text-white" onClick={() => onSelectPath(null)}>
         <div className="grid gap-8 lg:grid-cols-[280px_1fr]">
-          <Hotspot path="images" selected={sel("images")} onSelect={onSelectPath} label="تصاویر">
-            <div className="flex items-center justify-center">
-              <div className="h-40 w-36 rounded-2xl bg-[#1a4a42]" />
-              <div className="-mr-8 h-32 w-28 rounded-2xl bg-[#246056]" />
-            </div>
-          </Hotspot>
+          <div className="flex items-end justify-center gap-0">
+            <ClickableImage
+              path="images.0"
+              selected={sel("images.0") || sel("images")}
+              onSelectPath={onSelectPath}
+              label="تصویر ۱"
+              src={images[0]}
+              className="relative z-[1] h-40 w-36"
+              imgClassName="rounded-2xl"
+            />
+            <ClickableImage
+              path="images.1"
+              selected={sel("images.1") || sel("images")}
+              onSelectPath={onSelectPath}
+              label="تصویر ۲"
+              src={images[1]}
+              className="relative -mr-8 h-32 w-28"
+              imgClassName="rounded-2xl"
+            />
+          </div>
           <div>
             <Hotspot path="eyebrow" selected={sel("eyebrow")} onSelect={onSelectPath} label="eyebrow">
               <p className="text-[#F3CC30]">{str(payload.eyebrow)}</p>
@@ -264,6 +361,245 @@ export function SectionCanvas({
             </div>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (block.type === "page_hero") {
+    const title = str(payload.title, "تماس با آگروهوم");
+    const accent = str(payload.titleAccent, "آگروهوم");
+    const parts = title.split(accent);
+    return (
+      <div
+        className="relative mb-6 flex h-32 items-center overflow-hidden rounded-3xl px-8 text-white md:h-40"
+        onClick={() => onSelectPath(null)}
+      >
+        <Hotspot
+          path="image"
+          selected={sel("image")}
+          onSelect={onSelectPath}
+          label="تصویر"
+          className="absolute inset-0"
+        >
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: `url(${imageSrc(payload.image, "/c.jpg")})` }}
+          />
+          <div className="absolute inset-0 bg-[#002D1E]/70" />
+        </Hotspot>
+        <Hotspot path="title" selected={sel("title")} onSelect={onSelectPath} label="عنوان">
+          <p className="relative z-[1] text-xl font-bold md:text-2xl">
+            {parts.length > 1 ? (
+              <>
+                {parts[0]}
+                <Hotspot
+                  path="titleAccent"
+                  selected={sel("titleAccent")}
+                  onSelect={onSelectPath}
+                  label="اکسنت"
+                  className="inline"
+                >
+                  <span style={{ color: str(payload.accentColor, "#F4C111") }}>{accent}</span>
+                </Hotspot>
+                {parts.slice(1).join(accent)}
+              </>
+            ) : (
+              title
+            )}
+          </p>
+        </Hotspot>
+      </div>
+    );
+  }
+
+  if (block.type === "contact_intro") {
+    const channels = Array.isArray(payload.channels)
+      ? (payload.channels as Array<{ title?: string }>)
+      : [];
+    return (
+      <div className="space-y-4 px-4 py-6" dir="rtl" onClick={() => onSelectPath(null)}>
+        <Hotspot path="title" selected={sel("title")} onSelect={onSelectPath} label="عنوان">
+          <p className="text-xl font-extrabold">{str(payload.title)}</p>
+        </Hotspot>
+        <Hotspot path="text" selected={sel("text")} onSelect={onSelectPath} label="متن">
+          <p className="text-sm leading-7 text-black/60">{str(payload.text)}</p>
+        </Hotspot>
+        <Hotspot path="channels" selected={sel("channels")} onSelect={onSelectPath} label="راه‌ها">
+          <div className="flex flex-wrap justify-end gap-3 pt-2">
+            {(channels.length ? channels : [{ title: "ایمیل" }, { title: "تلفن" }]).map(
+              (ch, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-2 rounded-xl bg-[#105238] px-3 py-2 text-xs text-white"
+                >
+                  {str(ch.title, "راه ارتباطی")}
+                </div>
+              )
+            )}
+          </div>
+        </Hotspot>
+      </div>
+    );
+  }
+
+  if (block.type === "contact_form") {
+    return (
+      <div
+        className="grid gap-4 px-4 py-6 md:grid-cols-[160px_1fr_160px]"
+        dir="rtl"
+        onClick={() => onSelectPath(null)}
+      >
+        <div className="rounded-xl bg-[#105238] p-4 text-center text-white">
+          <Hotspot
+            path="sidebarEyebrow"
+            selected={sel("sidebarEyebrow")}
+            onSelect={onSelectPath}
+            label="eyebrow"
+          >
+            <p className="text-sm text-[#F4C111]">{str(payload.sidebarEyebrow, "7 روز هفته")}</p>
+          </Hotspot>
+          <Hotspot
+            path="sidebarTitle"
+            selected={sel("sidebarTitle")}
+            onSelect={onSelectPath}
+            label="عنوان سایدبار"
+          >
+            <p className="mt-1 text-sm font-extrabold">
+              {str(payload.sidebarTitle, "پاسخگوی شما هستیم…")}
+            </p>
+          </Hotspot>
+          <Hotspot
+            path="sidebarImage"
+            selected={sel("sidebarImage")}
+            onSelect={onSelectPath}
+            label="تصویر"
+          >
+            <div className="mx-auto mt-3 h-16 w-16 rounded-lg bg-white/10" />
+          </Hotspot>
+        </div>
+        <div className="rounded-2xl bg-[#F3F3F3] p-4">
+          <Hotspot path="formTitle" selected={sel("formTitle")} onSelect={onSelectPath} label="عنوان فرم">
+            <p className="font-extrabold">{str(payload.formTitle)}</p>
+          </Hotspot>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <div className="h-8 rounded-lg bg-white" />
+            <div className="h-8 rounded-lg bg-white" />
+            <div className="h-8 rounded-lg bg-white" />
+            <div className="h-8 rounded-lg bg-white" />
+            <div className="col-span-2 h-16 rounded-lg bg-white" />
+          </div>
+          <Hotspot
+            path="submitLabel"
+            selected={sel("submitLabel")}
+            onSelect={onSelectPath}
+            label="دکمه"
+          >
+            <span className="mt-2 inline-block rounded-2xl bg-green-800 px-3 py-1.5 text-xs text-white">
+              {str(payload.submitLabel, "ارسال پیام")}
+            </span>
+          </Hotspot>
+        </div>
+        <Hotspot path="mapEmbedUrl" selected={sel("mapEmbedUrl")} onSelect={onSelectPath} label="نقشه">
+          <div className="flex h-full min-h-[120px] items-center justify-center rounded-xl bg-[#dfe8e2] text-xs text-black/50">
+            نقشه
+          </div>
+        </Hotspot>
+      </div>
+    );
+  }
+
+  if (block.type === "about_story") {
+    const images = asImageList(payload.images, 4, [
+      "/ab1.png",
+      "/ab2.png",
+      "/ab3.png",
+      "/ab4.png",
+    ]);
+    const cta = (payload.cta as { label?: string } | undefined) || {};
+    return (
+      <div
+        className="grid gap-6 px-4 py-8 md:grid-cols-[220px_1fr]"
+        dir="rtl"
+        onClick={() => onSelectPath(null)}
+      >
+        <div className="grid grid-cols-2 gap-2">
+          {images.slice(0, 4).map((src, i) => (
+            <ClickableImage
+              key={i}
+              path={`images.${i}`}
+              selected={sel(`images.${i}`) || sel("images")}
+              onSelectPath={onSelectPath}
+              label={`تصویر ${i + 1}`}
+              src={src}
+              className={i === 0 ? "h-16" : "h-20"}
+              imgClassName="rounded-xl"
+            />
+          ))}
+        </div>
+        <div className="space-y-3">
+          <Hotspot path="eyebrow" selected={sel("eyebrow")} onSelect={onSelectPath} label="eyebrow">
+            <p className="text-sm text-black/60">{str(payload.eyebrow, "درباره ما")}</p>
+          </Hotspot>
+          <Hotspot path="title" selected={sel("title")} onSelect={onSelectPath} label="عنوان">
+            <p className="text-xl font-extrabold">{str(payload.title)}</p>
+          </Hotspot>
+          <Hotspot path="text" selected={sel("text")} onSelect={onSelectPath} label="متن">
+            <p className="line-clamp-4 text-sm leading-7 text-black/60">{str(payload.text)}</p>
+          </Hotspot>
+          <Hotspot path="cta" selected={sel("cta")} onSelect={onSelectPath} label="دکمه">
+            <span className="inline-block rounded-2xl bg-[#308060] px-3 py-1.5 text-xs text-white">
+              {str(cta.label, "تماس با ما")}
+            </span>
+          </Hotspot>
+        </div>
+      </div>
+    );
+  }
+
+  if (block.type === "about_banner") {
+    const cta = (payload.cta as { label?: string } | undefined) || {};
+    return (
+      <div
+        className="relative flex h-28 items-center justify-between overflow-hidden bg-[#105238] px-6 text-white"
+        dir="rtl"
+        onClick={() => onSelectPath(null)}
+      >
+        <Hotspot path="image" selected={sel("image")} onSelect={onSelectPath} label="تصویر" className="absolute inset-0">
+          <div
+            className="absolute inset-0 bg-cover bg-center opacity-40"
+            style={{ backgroundImage: `url(${imageSrc(payload.image, "/abb.png")})` }}
+          />
+        </Hotspot>
+        <Hotspot path="title" selected={sel("title")} onSelect={onSelectPath} label="عنوان" className="relative z-[1]">
+          <p className="text-sm font-bold md:text-base">{str(payload.title)}</p>
+        </Hotspot>
+        <Hotspot path="cta" selected={sel("cta")} onSelect={onSelectPath} label="دکمه" className="relative z-[1]">
+          <span className="rounded-2xl bg-[#F7DB5E] px-3 py-1.5 text-xs text-black">
+            {str(cta.label, "شروع کنید!")}
+          </span>
+        </Hotspot>
+      </div>
+    );
+  }
+
+  if (block.type === "about_services") {
+    const items = Array.isArray(payload.items)
+      ? (payload.items as Array<{ title?: string }>)
+      : [];
+    return (
+      <div className="space-y-4 px-4 py-8" dir="rtl" onClick={() => onSelectPath(null)}>
+        <Hotspot path="title" selected={sel("title")} onSelect={onSelectPath} label="عنوان">
+          <p className="text-lg font-extrabold">{str(payload.title, "خدمات مشتریان")}</p>
+        </Hotspot>
+        <Hotspot path="items" selected={sel("items")} onSelect={onSelectPath} label="آیتم‌ها">
+          <div className="grid gap-3 md:grid-cols-2">
+            {(items.length ? items : [{ title: "خدمت ۱" }, { title: "خدمت ۲" }]).map((item, i) => (
+              <div key={i} className="rounded-2xl bg-[#F5F5F5] px-4 py-3 text-sm font-semibold">
+                {str(item.title, `خدمت ${i + 1}`)}
+              </div>
+            ))}
+          </div>
+        </Hotspot>
       </div>
     );
   }

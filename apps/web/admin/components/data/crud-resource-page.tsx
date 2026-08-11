@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -51,6 +52,7 @@ import { cn } from "@/lib/utils";
 export type FieldType =
   | "text"
   | "textarea"
+  | "richtext"
   | "number"
   | "switch"
   | "select"
@@ -126,7 +128,8 @@ type CrudResourcePageProps<T extends { id: string }> = {
 function resolveColSpan(field: FormField): 1 | 2 | "full" {
   if (field.colSpan) return field.colSpan;
   const type = field.type || "text";
-  if (type === "textarea" || type === "media" || type === "async-select") return "full";
+  if (type === "textarea" || type === "richtext" || type === "media" || type === "async-select")
+    return "full";
   if (type === "switch") return 1;
   return 1;
 }
@@ -179,6 +182,16 @@ function FieldControl({
         placeholder={field.placeholder}
         dir={inputDir}
         className="min-h-[120px]"
+      />
+    );
+  }
+  if (type === "richtext") {
+    return (
+      <RichTextEditor
+        value={String(value ?? "")}
+        onChange={(html) => onChange(html)}
+        placeholder={field.placeholder}
+        height={field.name === "content" ? 380 : 280}
       />
     );
   }
@@ -434,8 +447,12 @@ export function CrudResourcePage<T extends { id: string }>({
         total: nestedList.total,
         meta: nestedList.meta,
         loading: nestedList.loading,
+        loadingMore: false,
         error: nestedList.error,
         reload: nestedList.reload,
+        paginationMode: "classic" as const,
+        hasMore: false,
+        loadMore: () => undefined,
       }
     : flatList;
 
@@ -634,11 +651,19 @@ export function CrudResourcePage<T extends { id: string }>({
         rowKey={(row) => row.id}
         filters={list.state.filters}
         onFiltersChange={(next) => list.setQuery({ filters: next }, { resetPage: true })}
+        paginationMode={list.paginationMode}
+        showPaginationMode={!isNested}
+        loadingMore={list.loadingMore}
+        hasMore={list.hasMore}
+        onLoadMore={list.loadMore}
         sortable={effectiveSortable}
         onReorder={
           effectiveSortable
             ? async (ordered) => {
-                const base = (list.state.page - 1) * list.state.limit;
+                const base =
+                  list.paginationMode === "infinite"
+                    ? 0
+                    : (list.state.page - 1) * list.state.limit;
                 try {
                   await apiPut(`${path}/reorder`, {
                     items: ordered.map((row, index) => ({

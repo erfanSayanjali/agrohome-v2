@@ -92,3 +92,49 @@ body {
     filter: none !important;
   }
 }
+
+/* TinyMCE — هم‌تراز با تم ادمین */
+.admin-tinymce .tox-tinymce {
+  border-radius: var(--admin-radius) !important;
+  border-color: var(--admin-border) !important;
+  overflow: hidden;
+  box-shadow: none !important;
+}
+
+.admin-tinymce .tox-editor-header,
+.admin-tinymce .tox-toolbar-overlord,
+.admin-tinymce .tox-toolbar__primary,
+.admin-tinymce .tox-statusbar {
+  background: var(--admin-bg-elevated) !important;
+  border-color: var(--admin-border) !important;
+}
+
+.admin-tinymce .tox .tox-tbtn:hover,
+.admin-tinymce .tox .tox-tbtn--enabled,
+.admin-tinymce .tox .tox-tbtn:focus {
+  background: rgba(244, 193, 17, 0.14) !important;
+}
+
+.admin-tinymce .tox .tox-tbtn--enabled svg,
+.admin-tinymce .tox .tox-tbtn:hover svg {
+  fill: var(--admin-accent) !important;
+}
+
+.admin-tinymce .tox .tox-edit-area::before {
+  border-radius: 0;
+}
+
+.tox-tinymce-aux {
+  z-index: 70 !important;
+}
+
+.tox .tox-dialog-wrap__backdrop {
+  background: rgba(0, 0, 0, 0.55) !important;
+}
+
+.tox .tox-dialog {
+  border-radius: var(--admin-radius) !important;
+  border: 1px solid var(--admin-border) !important;
+  background: var(--admin-surface) !important;
+  box-shadow: var(--admin-shadow) !important;
+}

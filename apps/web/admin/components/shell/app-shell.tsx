@@ -21,6 +21,7 @@ import {
   PanelLeftClose,
   ChevronDown,
   Shield,
+  Settings,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -95,7 +96,6 @@ const navEntries: NavEntry[] = [
       icon: Layers,
       items: [
         { href: "/pages", label: "صفحه‌ساز", icon: Layers },
-        { href: "/regions", label: "مناطق CMS", icon: Layers },
         { href: "/media", label: "کتابخانه رسانه", icon: ImageIcon },
         { href: "/seo", label: "SEO", icon: Search },
       ],
@@ -113,6 +113,10 @@ const navEntries: NavEntry[] = [
         { href: "/contacts", label: "پیام‌های تماس", icon: Inbox },
       ],
     },
+  },
+  {
+    type: "link",
+    item: { href: "/settings", label: "تنظیمات سایت", icon: Settings },
   },
 ];
 
@@ -322,9 +326,11 @@ function SidebarBrand({ animate }: { animate?: boolean }) {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
+  const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const name =
     [user?.firstName, user?.lastName].filter(Boolean).join(" ") || user?.phone || "ادمین";
+  const isPageBuilder = /^\/pages\/[^/]+\/?$/.test(pathname || "");
 
   return (
     <div className="min-h-screen md:ps-[var(--admin-sidebar)]">
@@ -368,7 +374,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6">{children}</main>
+      <main
+        className={
+          isPageBuilder
+            ? "w-full max-w-none p-0"
+            : "mx-auto w-full max-w-7xl px-4 py-6 md:px-6"
+        }
+      >
+        {children}
+      </main>
 
       <Dialog open={mobileOpen} onOpenChange={setMobileOpen}>
         <DialogContent className="start-0 top-0 h-full max-w-[18.5rem] translate-x-0 translate-y-0 overflow-y-auto rounded-none border-e sm:rounded-none rtl:start-auto rtl:end-0">

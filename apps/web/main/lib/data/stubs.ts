@@ -6,30 +6,110 @@ type ApiOne<T = unknown> = { content: T | null };
 const emptyList = <T = unknown>(): ApiList<T> => ({ content: [], total: 0 });
 const emptyOne = <T = unknown>(): ApiOne<T> => ({ content: null });
 
-export async function getFooterWidget() {
+const API_BASE =
+  process.env.API_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://localhost:3002";
+
+async function apiJson<T>(path: string): Promise<T | null> {
+  try {
+    const res = await fetch(`${API_BASE.replace(/\/$/, "")}/api/v1${path}`, {
+      cache: "no-store",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
+type CategoryNode = {
+  id?: string;
+  _id?: string;
+  title?: string;
+  slug?: string;
+  children?: CategoryNode[];
+  [key: string]: unknown;
+};
+
+function normalizeCategoryTree(nodes: CategoryNode[] = []): CategoryNode[] {
+  return nodes.map((node) => ({
+    ...node,
+    _id: node.id || node._id,
+    children: normalizeCategoryTree(node.children || []),
+  }));
+}
+
+export async function getSiteSettings() {
   return {
     content: {
-      content: {
-        items: [] as Array<{
-          widgetType?: string;
-          title?: string;
-          content?: { items?: Array<{ href?: string; title?: string }> } | string;
-        }>,
-      },
+      id: "default",
+      logoUrl: "/logo.png",
+      faviconUrl: "/favicon.ico" as string | null,
+      footerText:
+        "با کودهای ارگانیک آگروهوم، بدون بوی بد و مواد شیمیایی، گیاهانت را زنده نگه دار.",
+      socialLinks: [
+        { label: "اینستاگرام", href: "https://www.instagram.com/agrohome" },
+        { label: "تلگرام", href: "https://t.me/agrohome" },
+      ] as Array<{ label?: string; href?: string }>,
+      footerLinkGroups: [
+        {
+          title: "دسترسی سریع",
+          links: [
+            { title: "صفحه اصلی", href: "/" },
+            { title: "کودهای خانگی", href: "/products" },
+            { title: "وبلاگ", href: "/blogs" },
+            { title: "درباره ما", href: "/about" },
+            { title: "تماس با ما", href: "/contact" },
+          ],
+        },
+        {
+          title: "فروشگاه",
+          links: [
+            { title: "همه محصولات", href: "/products" },
+            { title: "مقالات و راهنما", href: "/blogs" },
+            { title: "تماس با پشتیبانی", href: "/contact" },
+          ],
+        },
+      ] as Array<{
+        title?: string;
+        links?: Array<{ title?: string; href?: string }>;
+      }>,
     },
   };
 }
 
+/** @deprecated use getSiteSettings */
+export async function getFooterWidget() {
+  const settings = await getSiteSettings();
+  return { content: settings.content };
+}
+
 export async function getProductCategoriesNested() {
-  return emptyList();
+  const res = await apiJson<{ content: CategoryNode[] }>(
+    "/product-categories/nested"
+  );
+  if (!res?.content?.length) return emptyList();
+  return { content: normalizeCategoryTree(res.content), total: res.content.length };
 }
 
 export async function getProductCategories() {
-  return emptyList();
+  const res = await apiJson<{ content: CategoryNode[] }>("/product-categories");
+  if (!res?.content?.length) return emptyList();
+  return {
+    content: normalizeCategoryTree(res.content),
+    total: res.content.length,
+  };
 }
 
-export async function getProductCategoryBySlug(_slug: string) {
-  return emptyOne();
+export async function getProductCategoryBySlug(slug: string) {
+  const res = await apiJson<{ content: CategoryNode | null }>(
+    `/product-categories/${encodeURIComponent(slug)}`
+  );
+  if (!res?.content) return emptyOne();
+  const [normalized] = normalizeCategoryTree([res.content]);
+  return { content: normalized };
 }
 
 export async function getHomeFaq() {
@@ -134,8 +214,18 @@ export async function submitComment(_payload: Record<string, unknown>) {
   return { ok: true as const };
 }
 
-export async function submitContact(_payload: Record<string, unknown>) {
-  return { ok: true as const };
+export async function submitContact(payload: Record<string, unknown>) {
+  try {
+    const res = await fetch(`${API_BASE.replace(/\/$/, "")}/api/v1/contact`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) return { ok: false as const };
+    return { ok: true as const };
+  } catch {
+    return { ok: false as const };
+  }
 }
 
 export function mediaUrl(path?: string | null | { url?: string | null }) {

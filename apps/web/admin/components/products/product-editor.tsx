@@ -15,7 +15,7 @@ import { apiDelete, apiGet, apiPost, apiPut, ApiError, unwrap } from "@/lib/api"
 import { formatFaNumber } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -486,11 +486,10 @@ export function ProductEditor({
                   </div>
                   <div className="space-y-2 text-start sm:col-span-2">
                     <Label>توضیحات</Label>
-                    <Textarea
+                    <RichTextEditor
                       value={form.description}
-                      onChange={(e) => patchForm("description", e.target.value)}
-                      className="min-h-[120px]"
-                      dir="rtl"
+                      onChange={(html) => patchForm("description", html)}
+                      height={320}
                     />
                   </div>
                   <div className="space-y-2 text-start sm:col-span-2">

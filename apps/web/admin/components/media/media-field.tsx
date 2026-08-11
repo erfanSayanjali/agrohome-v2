@@ -14,14 +14,12 @@ type MediaFieldProps = {
   value?: unknown;
   onChange: (next: MediaRef | null) => void;
   label?: string;
-  placeholder?: string;
 };
 
 export function MediaField({
   value,
   onChange,
   label = "رسانه",
-  placeholder = "URL تصویر",
 }: MediaFieldProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const media = toMediaRef(value);
@@ -48,26 +46,30 @@ export function MediaField({
         ) : null}
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-        <div className="min-w-0 flex-1 space-y-2">
-          <Label className="text-xs text-[var(--admin-muted)]">آدرس</Label>
-          <Input
-            value={media?.url || ""}
-            onChange={(e) => {
-              const url = e.target.value.trim();
-              if (!url) {
-                onChange(null);
-                return;
-              }
-              onChange({ url, alt: media?.alt ?? null });
-            }}
-            placeholder={placeholder}
-            dir="ltr"
+      {preview ? (
+        <div className="overflow-hidden rounded-lg border border-[var(--admin-border)] bg-black/20">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={preview}
+            alt={media?.alt || ""}
+            className="mx-auto max-h-36 object-contain"
           />
         </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setPickerOpen(true)}
+          className="flex w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--admin-border)] bg-[var(--admin-bg)]/40 px-4 py-8 text-[var(--admin-muted)] transition hover:border-[var(--admin-primary)] hover:bg-[var(--admin-bg-elevated)] hover:text-[var(--admin-fg)]"
+        >
+          <ImageIcon className="h-8 w-8 opacity-70" />
+          <span className="text-sm font-medium">انتخاب از رسانه</span>
+        </button>
+      )}
+
+      <div className="flex flex-wrap gap-2">
         <Button type="button" variant="secondary" onClick={() => setPickerOpen(true)}>
           <ImageIcon className="h-4 w-4" />
-          انتخاب از رسانه
+          {media ? "تغییر تصویر" : "انتخاب از رسانه"}
         </Button>
       </div>
 
@@ -83,17 +85,6 @@ export function MediaField({
           disabled={!media?.url}
         />
       </div>
-
-      {preview ? (
-        <div className="overflow-hidden rounded-lg border border-[var(--admin-border)] bg-black/20">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={preview}
-            alt={media?.alt || ""}
-            className="mx-auto max-h-36 object-contain"
-          />
-        </div>
-      ) : null}
 
       {pickerOpen ? (
         <MediaPicker

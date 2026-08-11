@@ -106,13 +106,11 @@ async function resolveEntityRef(
 
 async function findPageBySlug(app: FastifyInstance, slugRaw: string) {
   const decoded = decodeURIComponent(slugRaw || "/");
-  const candidates = Array.from(
-    new Set(
-      [decoded, `/${decoded.replace(/^\//, "")}`, decoded.replace(/^\//, ""), "/", "home"].filter(
-        Boolean
-      )
-    )
-  );
+  const bare = decoded.replace(/^\//, "");
+  const isHome = !bare || bare === "home" || decoded === "/";
+  const candidates = isHome
+    ? ["/", "home"]
+    : Array.from(new Set([decoded, `/${bare}`, bare].filter(Boolean)));
   return app.prisma.cmsPage.findFirst({
     where: { OR: candidates.map((slug) => ({ slug })) },
     include: { seo: true },
@@ -187,20 +185,43 @@ export async function publicRoutes(app: FastifyInstance) {
     return resolvePublicPage(app, reply, slug);
   });
 
-  app.get("/regions/:key", async (request, reply) => {
-    const { key } = request.params as { key: string };
-    const region = await app.prisma.cmsRegion.findFirst({
-      where: { key, status: "published" },
+  app.get("/site-settings", async () => {
+    const settings = await app.prisma.siteSettings.findUnique({
+      where: { id: "default" },
     });
-    if (!region || !region.publishedSnapshot) return reply.notFound(Fa.notFound);
-    return ok({
-      id: region.id,
-      key: region.key,
-      title: region.title,
-      revalidateSeconds: region.revalidateSeconds,
-      publishedAt: region.publishedAt,
-      snapshot: region.publishedSnapshot,
-    });
+    return ok(
+      settings ?? {
+        id: "default",
+        logoUrl: "/logo.png",
+        faviconUrl: "/favicon.ico",
+        footerText:
+          "با کودهای ارگانیک آگروهوم، بدون بوی بد و مواد شیمیایی، گیاهانت را زنده نگه دار.",
+        socialLinks: [
+          { label: "اینستاگرام", href: "https://www.instagram.com/agrohome" },
+          { label: "تلگرام", href: "https://t.me/agrohome" },
+        ],
+        footerLinkGroups: [
+          {
+            title: "دسترسی سریع",
+            links: [
+              { title: "صفحه اصلی", href: "/" },
+              { title: "کودهای خانگی", href: "/products" },
+              { title: "وبلاگ", href: "/blogs" },
+              { title: "درباره ما", href: "/about" },
+              { title: "تماس با ما", href: "/contact" },
+            ],
+          },
+          {
+            title: "فروشگاه",
+            links: [
+              { title: "همه محصولات", href: "/products" },
+              { title: "مقالات و راهنما", href: "/blogs" },
+              { title: "تماس با پشتیبانی", href: "/contact" },
+            ],
+          },
+        ],
+      }
+    );
   });
 
   app.post("/blocks/resolve", async (request) => {

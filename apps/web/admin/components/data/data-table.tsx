@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   DndContext,
   closestCenter,
@@ -28,12 +28,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Pagination } from "@/components/ui/pagination";
-import { TableSkeleton } from "@/components/ui/skeletons";
+import { TableLoadMoreSkeleton, TableSkeleton } from "@/components/ui/skeletons";
 import { Button } from "@/components/ui/button";
 import { ColumnFilterButton } from "@/components/data/column-filter";
 import { cn } from "@/lib/utils";
 import type { ColumnFilterDef, FilterValue } from "@/lib/table-filters";
 import { getFilterFieldKey } from "@/lib/table-filters";
+import type { PaginationMode } from "@/lib/pagination-mode";
 
 export type Column<T> = {
   key: string;
@@ -62,6 +63,12 @@ type DataTableProps<T extends { id: string }> = {
   onReorder?: (rows: T[]) => void | Promise<void>;
   filters?: Record<string, FilterValue>;
   onFiltersChange?: (filters: Record<string, FilterValue>) => void;
+  paginationMode?: PaginationMode;
+  loadingMore?: boolean;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
+  /** مخفی کردن سوییچ حالت (مثلاً لیست درختی) */
+  showPaginationMode?: boolean;
 };
 
 function resolveFilterConfig(col: Column<unknown>): ColumnFilterDef | null {
@@ -89,13 +96,33 @@ export function DataTable<T extends { id: string }>({
   onReorder,
   filters = {},
   onFiltersChange,
+  paginationMode,
+  loadingMore = false,
+  hasMore = false,
+  onLoadMore,
+  showPaginationMode = true,
 }: DataTableProps<T>) {
   const [localRows, setLocalRows] = useState(rows);
   const [busy, setBusy] = useState(false);
+  const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setLocalRows(rows);
   }, [rows]);
+
+  useEffect(() => {
+    if (!hasMore || !onLoadMore || loadingMore) return;
+    const node = loadMoreSentinelRef.current;
+    if (!node) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) onLoadMore();
+      },
+      { root: null, rootMargin: "320px 0px", threshold: 0 }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasMore, onLoadMore, loadingMore, localRows.length]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -251,12 +278,24 @@ export function DataTable<T extends { id: string }>({
       ) : (
         table
       )}
+      {hasMore || loadingMore ? (
+        <div ref={loadMoreSentinelRef}>
+          <TableLoadMoreSkeleton columns={columns.length + (sortable ? 1 : 0)} rows={4} />
+        </div>
+      ) : null}
       <div className="border-t border-[var(--admin-border)] px-3">
         <Pagination
           page={page}
           totalPages={totalPages}
           total={total}
           onPageChange={onPageChange}
+          mode={paginationMode}
+          showModeSwitch={showPaginationMode}
+          loadingMore={loadingMore}
+          hasMore={hasMore}
+          onLoadMore={onLoadMore}
+          loadedCount={localRows.length}
+          observeSentinel={false}
         />
       </div>
     </div>

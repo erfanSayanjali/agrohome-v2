@@ -27,6 +27,32 @@ export function TableSkeleton({
   );
 }
 
+/** ردیف‌های اسکلتون برای append زیر جدول در infinite scroll */
+export function TableLoadMoreSkeleton({
+  columns = 4,
+  rows = 3,
+}: {
+  columns?: number;
+  rows?: number;
+}) {
+  return (
+    <div
+      className="grid gap-0 border-t border-[var(--admin-border)]"
+      style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+      aria-busy="true"
+      aria-label="در حال بارگذاری"
+    >
+      {Array.from({ length: rows }).map((_, r) =>
+        Array.from({ length: columns }).map((_, c) => (
+          <div key={`${r}-${c}`} className="border-b border-[var(--admin-border)] p-3">
+            <Skeleton className="h-4 w-full max-w-[12rem]" />
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
 export function FormSkeleton({ fields = 5 }: { fields?: number }) {
   return (
     <div className="space-y-4">

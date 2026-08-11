@@ -1,5 +1,21 @@
+/**
+ * Full DB → seed snapshot backup.
+ *
+ * Writes:
+ *   src/seeds/data/snapshot.json   (all tables except OtpChallenge)
+ *   src/seeds/data/uploads/*       (every file under apps/api/uploads + any /uploads/ refs)
+ *
+ * Usage: pnpm db:export-seed
+ */
 import "dotenv/config";
-import { copyFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { prisma } from "../src/lib/prisma";
@@ -21,6 +37,25 @@ function serialize(value: unknown): unknown {
   return value;
 }
 
+/** Collect every `/uploads/<filename>` reference from arbitrary JSON. */
+function collectUploadNames(value: unknown, out: Set<string>) {
+  if (typeof value === "string") {
+    const matches = value.matchAll(/\/uploads\/([^"'?\s#]+)/g);
+    for (const m of matches) {
+      const name = basename(m[1]);
+      if (name) out.add(name);
+    }
+    return;
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) collectUploadNames(item, out);
+    return;
+  }
+  if (value && typeof value === "object") {
+    for (const v of Object.values(value)) collectUploadNames(v, out);
+  }
+}
+
 async function main() {
   const [
     roles,
@@ -38,8 +73,8 @@ async function main() {
     blogs,
     comments,
     cmsPages,
-    cmsRegions,
     contentBlocks,
+    siteSettings,
     seos,
     media,
     contactMessages,
@@ -59,8 +94,10 @@ async function main() {
     prisma.blog.findMany({ orderBy: { createdAt: "asc" } }),
     prisma.comment.findMany({ orderBy: { createdAt: "asc" } }),
     prisma.cmsPage.findMany({ orderBy: { createdAt: "asc" } }),
-    prisma.cmsRegion.findMany({ orderBy: { createdAt: "asc" } }),
-    prisma.contentBlock.findMany({ orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] }),
+    prisma.contentBlock.findMany({
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    }),
+    prisma.siteSettings.findUnique({ where: { id: "default" } }),
     prisma.seo.findMany({ orderBy: { createdAt: "asc" } }),
     prisma.media.findMany({ orderBy: { createdAt: "asc" } }),
     prisma.contactMessage.findMany({ orderBy: { createdAt: "asc" } }),
@@ -83,8 +120,8 @@ async function main() {
     blogs,
     comments,
     cmsPages,
-    cmsRegions,
     contentBlocks,
+    siteSettings: siteSettings ?? null,
     seos,
     media,
     contactMessages,
@@ -93,15 +130,30 @@ async function main() {
   mkdirSync(dirname(outPath), { recursive: true });
   writeFileSync(outPath, JSON.stringify(snapshot, null, 2), "utf8");
 
+  // Fresh uploads backup: wipe previous seed uploads, then copy everything needed.
+  if (existsSync(seedUploadsDir)) {
+    rmSync(seedUploadsDir, { recursive: true, force: true });
+  }
   mkdirSync(seedUploadsDir, { recursive: true });
+
+  const needed = new Set<string>();
+  collectUploadNames(snapshot, needed);
+
+  // Always include every file currently in apps/api/uploads (complete media backup).
+  if (existsSync(appUploadsDir)) {
+    for (const name of readdirSync(appUploadsDir)) {
+      if (name === ".gitkeep") continue;
+      needed.add(name);
+    }
+  }
+
   let copied = 0;
-  for (const item of media) {
-    const url = item.url || "";
-    if (!url.startsWith("/uploads/")) continue;
-    const fileName = basename(url);
+  let missing = 0;
+  for (const fileName of [...needed].sort()) {
     const src = join(appUploadsDir, fileName);
     if (!existsSync(src)) {
       console.warn(`Missing upload file: ${src}`);
+      missing += 1;
       continue;
     }
     copyFileSync(src, join(seedUploadsDir, fileName));
@@ -111,12 +163,15 @@ async function main() {
   const counts = Object.fromEntries(
     Object.entries(snapshot as Record<string, unknown>).map(([k, v]) => [
       k,
-      Array.isArray(v) ? v.length : v,
+      Array.isArray(v) ? v.length : v == null ? null : typeof v === "object" ? 1 : v,
     ]),
   );
   console.log("Exported seed snapshot to", outPath);
   console.log(counts);
-  console.log(`Copied ${copied} upload file(s) → ${seedUploadsDir}`);
+  console.log(
+    `Copied ${copied} upload file(s) → ${seedUploadsDir}` +
+      (missing ? ` (${missing} missing)` : ""),
+  );
 }
 
 main()

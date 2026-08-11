@@ -27,6 +27,8 @@ const Comments = ({comments = [], cms} = {}) => {
     const title = cms?.title || 'نظرات و رضایت مشتریان از محصولات ما';
     const list = Array.isArray(comments) ? comments : [];
 
+    if (!list.length) return null;
+
     return (
         <div className={`bg-[#E9F2EA]`}>
 
@@ -35,7 +37,6 @@ const Comments = ({comments = [], cms} = {}) => {
                     {title}
                 </p>
                 <div className='mt-10'>
-                    {list.length ? (
                     <Slider gap={20} className='!h-[260px]' width={'300px'} slides={
                         list.map(comment=>
                             <Comment
@@ -46,11 +47,6 @@ const Comments = ({comments = [], cms} = {}) => {
                             />,
                         )
                     } />
-                    ) : (
-                      <p className='rounded-xl bg-white/80 p-6 text-center text-sm text-black/60'>
-                        هنوز نظری برای این بخش پیدا نشد.
-                      </p>
-                    )}
                 </div>
             </div>
 

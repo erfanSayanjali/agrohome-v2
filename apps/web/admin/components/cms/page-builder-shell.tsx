@@ -3,9 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Plus, Rocket, ArrowRight } from "lucide-react";
+import { Plus, Rocket, ArrowRight, Search } from "lucide-react";
 import { apiDelete, apiGet, apiPost, apiPut, ApiError, unwrap } from "@/lib/api";
-import { PageHeader } from "@/components/shell/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,6 +13,12 @@ import { PageNavigator, type NavBlock } from "@/components/cms/page-navigator";
 import { SectionInspector } from "@/components/cms/section-inspector";
 import { SectionLibrary } from "@/components/cms/section-library";
 import { SeoFields } from "@/components/seo/seo-fields";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   buildSeoPath,
   emptySeoForm,
@@ -56,6 +61,7 @@ export function PageBuilderShell({ pageId }: PageBuilderShellProps) {
   const [selection, setSelection] = useState<Selection | null>(null);
   const [busy, setBusy] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [seoOpen, setSeoOpen] = useState(false);
   const [seo, setSeo] = useState<SeoFormValues>(emptySeoForm());
   const [seoBusy, setSeoBusy] = useState(false);
 
@@ -192,7 +198,7 @@ export function PageBuilderShell({ pageId }: PageBuilderShellProps) {
 
   if (loading || !page) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-4 p-6">
         <Skeleton className="h-10 w-64" />
         <Skeleton className="min-h-[36rem] w-full" />
       </div>
@@ -200,53 +206,58 @@ export function PageBuilderShell({ pageId }: PageBuilderShellProps) {
   }
 
   return (
-    <div className="space-y-4" dir="rtl">
-      <PageHeader
-        title={page.title}
-        description={`صفحه‌ساز · ${page.slug}`}
-        actions={
-          <>
+    <div
+      className="flex h-[calc(100vh-var(--admin-topbar))] flex-col overflow-hidden bg-[var(--admin-bg)]"
+      dir="rtl"
+    >
+      {/* Toolbar */}
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[var(--admin-border)] bg-[var(--admin-surface)] px-4 py-2.5">
+        <div className="min-w-0 text-start">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="truncate text-base font-semibold">{page.title}</h1>
             <Badge variant={page.status === "published" ? "success" : "muted"}>
               {page.status}
             </Badge>
-            <Button type="button" variant="secondary" onClick={() => router.push("/pages")}>
-              <ArrowRight className="h-4 w-4" />
-              بازگشت
-            </Button>
-            <Button type="button" variant="secondary" onClick={() => setLibraryOpen(true)}>
-              <Plus className="h-4 w-4" />
-              افزودن سکشن
-            </Button>
-            <Button
-              type="button"
-              onClick={async () => {
-                try {
-                  await apiPost(`/admin/pages/${page.id}/publish`);
-                  toast.success("صفحه منتشر شد");
-                  await load();
-                } catch (err) {
-                  toast.error(err instanceof ApiError ? err.message : "خطا");
-                }
-              }}
-            >
-              <Rocket className="h-4 w-4" />
-              Publish
-            </Button>
-          </>
-        }
-      />
+          </div>
+          <p className="truncate text-xs text-[var(--admin-muted)]" dir="ltr">
+            /{page.slug.replace(/^\//, "")}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="button" variant="secondary" size="sm" onClick={() => router.push("/pages")}>
+            <ArrowRight className="h-4 w-4" />
+            بازگشت
+          </Button>
+          <Button type="button" variant="secondary" size="sm" onClick={() => setSeoOpen(true)}>
+            <Search className="h-4 w-4" />
+            SEO
+          </Button>
+          <Button type="button" variant="secondary" size="sm" onClick={() => setLibraryOpen(true)}>
+            <Plus className="h-4 w-4" />
+            افزودن سکشن
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            onClick={async () => {
+              try {
+                await apiPost(`/admin/pages/${page.id}/publish`);
+                toast.success("صفحه منتشر شد");
+                await load();
+              } catch (err) {
+                toast.error(err instanceof ApiError ? err.message : "خطا");
+              }
+            }}
+          >
+            <Rocket className="h-4 w-4" />
+            Publish
+          </Button>
+        </div>
+      </div>
 
-      <div
-        className="grid gap-3 xl:grid-cols-[16rem_minmax(0,1fr)_20rem]"
-        style={{ minHeight: "calc(100vh - var(--admin-topbar) - 8rem)" }}
-      >
-        {/* Navigator */}
-        <aside
-          className={cn(
-            "overflow-hidden rounded-[var(--admin-radius)] border border-[var(--admin-border)] bg-[var(--admin-surface)]/50",
-            "xl:sticky xl:top-[calc(var(--admin-topbar)+0.75rem)] xl:z-10 xl:max-h-[calc(100vh-var(--admin-topbar)-1.5rem)]"
-          )}
-        >
+      {/* Workspace: navigator | canvas | inspector */}
+      <div className="flex min-h-0 flex-1">
+        <aside className="hidden w-[15.5rem] shrink-0 flex-col border-e border-[var(--admin-border)] bg-[var(--admin-surface)] lg:flex">
           <PageNavigator
             blocks={navBlocks}
             selection={selection}
@@ -256,118 +267,123 @@ export function PageBuilderShell({ pageId }: PageBuilderShellProps) {
           />
         </aside>
 
-        {/* Canvas */}
-        <div className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-[var(--admin-radius)] border border-[var(--admin-border)] bg-[#f7f5f1] xl:max-h-[calc(100vh-var(--admin-topbar)-1.5rem)]">
-          <div className="flex shrink-0 items-center justify-between border-b border-black/5 bg-white/80 px-4 py-2 text-xs text-[var(--admin-muted)]">
-            <span>بوم پیش‌نمایش — روی زیر‌بخش‌ها کلیک کنید</span>
-            <span dir="ltr">/{page.slug.replace(/^\//, "")}</span>
+        <section className="flex min-h-0 min-w-0 flex-1 flex-col bg-[#eceae6]">
+          <div className="flex shrink-0 items-center justify-between border-b border-black/5 bg-white/70 px-4 py-1.5 text-xs text-[var(--admin-muted)]">
+            <span>پیش‌نمایش دسکتاپ — روی المان‌ها کلیک کنید</span>
+            <span>عرض کامل</span>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto">
-          <div className="mx-auto min-h-[28rem] max-w-5xl bg-white text-[#1a1a1a]">
-            {sortedBlocks.length === 0 ? (
-              <div className="flex min-h-[28rem] flex-col items-center justify-center gap-3 px-6 text-center">
-                <p className="text-sm text-black/50">صفحه خالی است.</p>
-                <Button type="button" onClick={() => setLibraryOpen(true)}>
-                  <Plus className="h-4 w-4" />
-                  افزودن از کتابخانه
-                </Button>
-              </div>
-            ) : (
-              sortedBlocks.map((block) => {
-                const active = selection?.blockId === block.id;
-                return (
-                  <div
-                    key={block.id}
-                    className={cn(
-                      "group relative border-b border-black/5",
-                      !block.isVisible && "opacity-50",
-                      active && !selection?.path && "ring-2 ring-inset ring-[var(--admin-accent)]"
-                    )}
-                  >
+          <div className="min-h-0 flex-1 overflow-auto">
+            <div className="mx-auto w-full max-w-[1280px] bg-white text-[#1a1a1a] shadow-[0_0_0_1px_rgba(0,0,0,0.04)]">
+              {sortedBlocks.length === 0 ? (
+                <div className="flex min-h-[32rem] flex-col items-center justify-center gap-3 px-6 text-center">
+                  <p className="text-sm text-black/50">صفحه خالی است.</p>
+                  <Button type="button" onClick={() => setLibraryOpen(true)}>
+                    <Plus className="h-4 w-4" />
+                    افزودن از کتابخانه
+                  </Button>
+                </div>
+              ) : (
+                sortedBlocks.map((block) => {
+                  const active = selection?.blockId === block.id;
+                  return (
                     <div
-                      className="cursor-pointer"
-                      onClick={() => setSelection({ blockId: block.id, path: null })}
+                      key={block.id}
+                      className={cn(
+                        "group relative border-b border-black/5",
+                        !block.isVisible && "opacity-50",
+                        active && !selection?.path && "ring-2 ring-inset ring-[var(--admin-accent)]"
+                      )}
                     >
-                      <SectionCanvas
-                        block={block}
-                        selectedPath={active ? selection?.path ?? null : null}
-                        sectionSelected={active && !selection?.path}
-                        onSelectPath={(path) =>
-                          setSelection({ blockId: block.id, path })
-                        }
-                      />
+                      <div
+                        className="cursor-pointer"
+                        onClick={() => setSelection({ blockId: block.id, path: null })}
+                      >
+                        <SectionCanvas
+                          block={block}
+                          selectedPath={active ? selection?.path ?? null : null}
+                          sectionSelected={active && !selection?.path}
+                          onSelectPath={(path) =>
+                            setSelection({ blockId: block.id, path })
+                          }
+                        />
+                      </div>
                     </div>
-                  </div>
-                );
-              })
-            )}
+                  );
+                })
+              )}
+            </div>
           </div>
-          </div>
-        </div>
+        </section>
 
-        {/* Inspector */}
-        <aside
-          className={cn(
-            "overflow-hidden rounded-[var(--admin-radius)] border border-[var(--admin-border)] bg-[var(--admin-surface)]",
-            "xl:sticky xl:top-[calc(var(--admin-topbar)+0.75rem)] xl:z-10 xl:max-h-[calc(100vh-var(--admin-topbar)-1.5rem)]"
-          )}
-        >
+        <aside className="flex w-[min(100%,22rem)] shrink-0 flex-col border-s border-[var(--admin-border)] bg-[var(--admin-surface)]">
           <SectionInspector
             block={selectedBlock}
             selection={selection}
             busy={busy}
             onSave={(patch) => void saveBlock(patch)}
             onDelete={() => void deleteSelected()}
+            onSelectPath={(path) =>
+              selectedBlock
+                ? setSelection({ blockId: selectedBlock.id, path })
+                : undefined
+            }
           />
         </aside>
       </div>
 
-      <section className="rounded-[var(--admin-radius)] border border-[var(--admin-border)] bg-[var(--admin-surface)]/40 p-4">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h2 className="font-semibold">SEO</h2>
-            <p className="text-sm text-[var(--admin-muted)]">متادیتای صفحه</p>
-          </div>
-          <Button
-            type="button"
-            disabled={seoBusy}
-            onClick={async () => {
-              setSeoBusy(true);
-              try {
-                const targetPath =
-                  seo.targetPath.trim() || buildSeoPath("page", page.slug || "");
-                await upsertEntitySeo({
-                  targetType: "page",
-                  targetId: page.id,
-                  targetPath,
-                  pageId: page.id,
-                  form: { ...seo, targetPath },
-                });
-                toast.success("SEO ذخیره شد");
-              } catch (err) {
-                toast.error(err instanceof ApiError ? err.message : "خطا");
-              } finally {
-                setSeoBusy(false);
-              }
+      <Dialog open={seoOpen} onOpenChange={setSeoOpen}>
+        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto" dir="rtl">
+          <DialogHeader className="text-start">
+            <DialogTitle>SEO صفحه</DialogTitle>
+          </DialogHeader>
+          <SeoFields
+            value={{
+              ...seo,
+              targetPath: seo.targetPath || buildSeoPath("page", page.slug),
             }}
-          >
-            ذخیره SEO
-          </Button>
-        </div>
-        <SeoFields
-          value={{
-            ...seo,
-            targetPath: seo.targetPath || buildSeoPath("page", page.slug),
-          }}
-          onChange={setSeo}
-        />
-      </section>
+            onChange={setSeo}
+          />
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="secondary" onClick={() => setSeoOpen(false)}>
+              بستن
+            </Button>
+            <Button
+              type="button"
+              disabled={seoBusy}
+              onClick={async () => {
+                setSeoBusy(true);
+                try {
+                  const targetPath =
+                    seo.targetPath.trim() || buildSeoPath("page", page.slug || "");
+                  await upsertEntitySeo({
+                    targetType: "page",
+                    targetId: page.id,
+                    targetPath,
+                    pageId: page.id,
+                    form: { ...seo, targetPath },
+                  });
+                  toast.success("SEO ذخیره شد");
+                  setSeoOpen(false);
+                } catch (err) {
+                  toast.error(err instanceof ApiError ? err.message : "خطا");
+                } finally {
+                  setSeoBusy(false);
+                }
+              }}
+            >
+              ذخیره SEO
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <SectionLibrary
         open={libraryOpen}
         onOpenChange={setLibraryOpen}
         pageId={page.id}
-        nextSortOrder={sortedBlocks.length ? Math.max(...sortedBlocks.map((b) => b.sortOrder)) + 1 : 0}
+        nextSortOrder={
+          sortedBlocks.length ? Math.max(...sortedBlocks.map((b) => b.sortOrder)) + 1 : 0
+        }
         onInserted={() => void load()}
       />
     </div>

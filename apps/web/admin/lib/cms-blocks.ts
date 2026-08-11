@@ -57,6 +57,7 @@ export function defaultEntityForBlockType(type: string): EntityType {
 export type SlotKind =
   | "text"
   | "textarea"
+  | "richtext"
   | "url"
   | "image"
   | "color"
@@ -99,7 +100,7 @@ const ctaFields: SlotField[] = [
 
 const faqItemFields: SlotField[] = [
   { key: "title", label: "سوال", kind: "text" },
-  { key: "content", label: "پاسخ (HTML)", kind: "textarea" },
+  { key: "content", label: "پاسخ (HTML)", kind: "richtext" },
 ];
 
 export const BLOCK_TYPES: CmsBlockDefinition[] = [
@@ -346,7 +347,173 @@ export const BLOCK_TYPES: CmsBlockDefinition[] = [
     defaultPayload: { title: "", text: "متن این بخش را بنویسید…" },
     slots: [
       { id: "title", label: "عنوان", path: "title", kind: "text" },
+      { id: "text", label: "متن", path: "text", kind: "richtext" },
+    ],
+  },
+  {
+    value: "page_hero",
+    label: "هیرو صفحه داخلی",
+    sourceType: "STATIC",
+    defaultPayload: {
+      title: "تماس با آگروهوم",
+      titleAccent: "آگروهوم",
+      accentColor: "#F4C111",
+      image: "/c.jpg",
+      imagePosition: "",
+      imageAlt: "تماس با ما",
+    },
+    slots: [
+      { id: "image", label: "تصویر پس‌زمینه", path: "image", kind: "image" },
+      { id: "title", label: "عنوان", path: "title", kind: "text" },
+      { id: "titleAccent", label: "کلمه اکسنت", path: "titleAccent", kind: "text" },
+      { id: "accentColor", label: "رنگ اکسنت", path: "accentColor", kind: "color" },
+      { id: "imageAlt", label: "متن جایگزین تصویر", path: "imageAlt", kind: "text" },
+    ],
+  },
+  {
+    value: "contact_intro",
+    label: "معرفی تماس",
+    sourceType: "STATIC",
+    defaultPayload: {
+      title: "لورم ایپسوم متن نمایشی با تولید ساختگی نامفهوم",
+      text: "لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ، و با استفاده از طراحان گرافیک است، چاپگرها و متون بلکه روزنامه و مجله در ستون و سطرآنچنان که لازم است.",
+      channels: [
+        { type: "email", title: "info@codeino.com", href: "mailto:info@codeino.com" },
+        { type: "phone", title: "021-28428343", href: "tel:02128428343" },
+        {
+          type: "instagram",
+          title: "instagram.com/agrohome",
+          href: "https://www.instagram.com/agrohome",
+        },
+      ],
+    },
+    slots: [
+      { id: "title", label: "عنوان", path: "title", kind: "text" },
       { id: "text", label: "متن", path: "text", kind: "textarea" },
+      {
+        id: "channels",
+        label: "راه‌های ارتباطی",
+        path: "channels",
+        kind: "list",
+        itemLabel: "راه ارتباطی",
+        itemFields: [
+          { key: "type", label: "نوع (email/phone/instagram)", kind: "text" },
+          { key: "title", label: "متن نمایشی", kind: "text" },
+          { key: "href", label: "لینک", kind: "url" },
+        ],
+      },
+    ],
+  },
+  {
+    value: "contact_form",
+    label: "فرم تماس",
+    sourceType: "STATIC",
+    defaultPayload: {
+      sidebarEyebrow: "7 روز هفته",
+      sidebarTitle: "پاسخگوی شما هستیم…",
+      sidebarImage: "/ccc.png",
+      formTitle: "سوال، درخواست یا پیشنهادی دارید؟ بنویسید..",
+      submitLabel: "ارسال پیام",
+      mapEmbedUrl:
+        "https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d3239.668737981355!2d51.38996823122519!3d35.709768587810444!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sfa!2suk!4v1763887018510!5m2!1sfa!2suk",
+    },
+    slots: [
+      { id: "sidebarEyebrow", label: "خط بالای سایدبار", path: "sidebarEyebrow", kind: "text" },
+      { id: "sidebarTitle", label: "عنوان سایدبار", path: "sidebarTitle", kind: "textarea" },
+      { id: "sidebarImage", label: "تصویر سایدبار", path: "sidebarImage", kind: "image" },
+      { id: "formTitle", label: "عنوان فرم", path: "formTitle", kind: "text" },
+      { id: "submitLabel", label: "متن دکمه ارسال", path: "submitLabel", kind: "text" },
+      { id: "mapEmbedUrl", label: "آدرس embed نقشه", path: "mapEmbedUrl", kind: "url" },
+    ],
+  },
+  {
+    value: "about_story",
+    label: "داستان درباره ما",
+    sourceType: "STATIC",
+    defaultPayload: {
+      eyebrow: "درباره ما",
+      title: "با آگروهوم هوشمند خرید کن!",
+      titleAccent: "آگروهوم",
+      accentColor: "#105238",
+      text: "آگروهوم یک فروشگاه آنلاین است که به صورت تخصصی در زمینه فروش کودهای خانگی فعالیت می‌کند. هدف ما ارائه محصولات با کیفیت و سازگار با محیط زیست است تا به شما در بهبود رشد گیاهان خانگی‌تان کمک کنیم.",
+      images: ["/ab1.png", "/ab2.png", "/ab3.png", "/ab4.png"],
+      cta: { label: "تماس با ما", href: "/contact" },
+    },
+    slots: [
+      {
+        id: "images",
+        label: "تصاویر",
+        path: "images",
+        kind: "list",
+        itemLabel: "تصویر",
+        itemFields: [{ key: "_value", label: "آدرس تصویر", kind: "image" }],
+      },
+      { id: "eyebrow", label: "خط بالای عنوان", path: "eyebrow", kind: "text" },
+      { id: "title", label: "عنوان", path: "title", kind: "text" },
+      { id: "titleAccent", label: "کلمه اکسنت", path: "titleAccent", kind: "text" },
+      { id: "accentColor", label: "رنگ اکسنت", path: "accentColor", kind: "color" },
+      { id: "text", label: "متن معرفی", path: "text", kind: "textarea" },
+      {
+        id: "cta",
+        label: "دکمه",
+        path: "cta",
+        kind: "group",
+        fields: ctaFields,
+      },
+    ],
+  },
+  {
+    value: "about_banner",
+    label: "بنر اعتماد درباره ما",
+    sourceType: "STATIC",
+    defaultPayload: {
+      image: "/abb.png",
+      title: "اعتماد شما، انگیزه‌ی ما برای بهتر شدن",
+      titleAccent: "انگیزه‌ی ما",
+      accentColor: "#F7DB5E",
+      cta: { label: "شروع کنید!", href: "/products" },
+    },
+    slots: [
+      { id: "image", label: "تصویر بنر", path: "image", kind: "image" },
+      { id: "title", label: "عنوان", path: "title", kind: "text" },
+      { id: "titleAccent", label: "کلمه اکسنت", path: "titleAccent", kind: "text" },
+      { id: "accentColor", label: "رنگ اکسنت", path: "accentColor", kind: "color" },
+      {
+        id: "cta",
+        label: "دکمه",
+        path: "cta",
+        kind: "group",
+        fields: ctaFields,
+      },
+    ],
+  },
+  {
+    value: "about_services",
+    label: "خدمات درباره ما",
+    sourceType: "STATIC",
+    defaultPayload: {
+      title: "خدمات مشتریان",
+      items: [
+        {
+          title: "ارسال سریع و مطمئن",
+          content: "<p>سفارش‌های شما در کوتاه‌ترین زمان و با بسته‌بندی استاندارد ارسال می‌شوند.</p>",
+        },
+        {
+          title: "مشاوره تخصصی گیاه",
+          content: "<p>تیم پشتیبانی آگروهوم برای انتخاب کود مناسب گیاهتان همراه شماست.</p>",
+        },
+      ],
+    },
+    slots: [
+      { id: "title", label: "عنوان بخش", path: "title", kind: "text" },
+      {
+        id: "items",
+        label: "آیتم‌ها",
+        path: "items",
+        kind: "list",
+        itemLabel: "خدمت",
+        itemFields: faqItemFields,
+      },
     ],
   },
   {
@@ -438,6 +605,54 @@ export const HOME_PAGE_TEMPLATE = [
       variant: "slider",
     },
   },
+].map((item, sortOrder) => {
+  const def = BLOCK_TYPES.find((t) => t.value === item.type)!;
+  return {
+    type: def.value,
+    name: item.name,
+    sortOrder,
+    isVisible: true,
+    sourceType: def.sourceType,
+    payload: structuredClone(
+      "payload" in item && item.payload ? item.payload : def.defaultPayload
+    ),
+  };
+});
+
+/** قالب صفحه تماس با ما */
+export const CONTACT_PAGE_TEMPLATE = [
+  { type: "page_hero", name: "هیرو تماس" },
+  { type: "contact_intro", name: "معرفی تماس" },
+  { type: "contact_form", name: "فرم تماس" },
+].map((item, sortOrder) => {
+  const def = BLOCK_TYPES.find((t) => t.value === item.type)!;
+  return {
+    type: def.value,
+    name: item.name,
+    sortOrder,
+    isVisible: true,
+    sourceType: def.sourceType,
+    payload: structuredClone(def.defaultPayload),
+  };
+});
+
+/** قالب صفحه درباره ما */
+export const ABOUT_PAGE_TEMPLATE = [
+  {
+    type: "page_hero",
+    name: "هیرو درباره ما",
+    payload: {
+      title: "درباره آگروهوم",
+      titleAccent: "آگروهوم",
+      accentColor: "#F4C111",
+      image: "/ai1.jpg",
+      imagePosition: "object-[0px_90%]",
+      imageAlt: "درباره ما",
+    },
+  },
+  { type: "about_story", name: "داستان درباره ما" },
+  { type: "about_banner", name: "بنر اعتماد" },
+  { type: "about_services", name: "خدمات مشتریان" },
 ].map((item, sortOrder) => {
   const def = BLOCK_TYPES.find((t) => t.value === item.type)!;
   return {

@@ -1,25 +1,33 @@
-import React from 'react';
-import AboutPage from '../../../pages/AboutPage.jsx';
-import { getSeoByPath, getWidgetKadamat } from '../../../lib/data/stubs';
+import CmsAboutSections from '../../../components/main/cms/CmsAboutSections';
+import { getPublishedAboutPage } from '../../../lib/data/cms';
 
-const page = async () => {
-  const [kadamat] = await Promise.all([getWidgetKadamat()]);
-  return <AboutPage kadamat={kadamat.content} />;
-};
+export default async function About() {
+  const cmsAbout = await getPublishedAboutPage();
 
-export default page;
+  if (!cmsAbout?.blocks?.length) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-24 text-center" dir="rtl">
+        <h1 className="text-xl font-extrabold">صفحه درباره ما از صفحه‌ساز بارگذاری نشد</h1>
+        <p className="mt-3 text-sm text-black/60">
+          مطمئن شوید API روشن است، صفحه «/about» در پنل سکشن دارد، و
+          <code className="mx-1 rounded bg-black/5 px-1">NEXT_PUBLIC_API_URL</code>
+          درست تنظیم شده است.
+        </p>
+      </div>
+    );
+  }
+
+  return <CmsAboutSections blocks={cmsAbout.blocks} />;
+}
 
 export async function generateMetadata() {
-  const seo = await getSeoByPath('/about');
-  const item = seo?.content?.[0];
-  if (!item) return {};
+  const cmsAbout = await getPublishedAboutPage();
+  if (!cmsAbout?.title) return { title: 'درباره ما' };
 
   return {
-    title: item.metaTitle || '',
-    description: item.metaDescription || '',
-    keywords: item.metaKeyWords?.join(', ') || '',
+    title: cmsAbout.title,
     alternates: {
-      canonical: item.canonicalUrl || undefined,
+      canonical: '/about',
     },
   };
 }

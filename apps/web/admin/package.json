@@ -4,8 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack --port 4001",
-    "build": "next build",
-    "start": "next start -p 3001"
+    "build": "pnpm run copy:tinymce && next build",
+    "start": "next start -p 3001",
+    "copy:tinymce": "node ./scripts/copy-tinymce.mjs",
+    "postinstall": "node ./scripts/copy-tinymce.mjs"
   },
   "dependencies": {
     "@agrohome/shared": "workspace:*",
@@ -26,6 +28,7 @@
     "@radix-ui/react-switch": "^1.3.7",
     "@radix-ui/react-tabs": "^1.1.21",
     "@radix-ui/react-tooltip": "^1.2.16",
+    "@tinymce/tinymce-react": "^6.3.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.31.0",
@@ -33,7 +36,8 @@
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "sonner": "^2.0.8",
-    "tailwind-merge": "^3.6.0"
+    "tailwind-merge": "^3.6.0",
+    "tinymce": "^8.8.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

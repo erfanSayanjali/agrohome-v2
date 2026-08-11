@@ -18,6 +18,19 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+export type MediaUsage = {
+  entityType:
+    | "product"
+    | "blog"
+    | "blog_category"
+    | "user"
+    | "site_settings"
+    | "cms_block";
+  entityId: string;
+  label: string;
+  field: string;
+};
+
 export type MediaItem = {
   id: string;
   url: string;
@@ -25,6 +38,7 @@ export type MediaItem = {
   alt?: string | null;
   type?: string | null;
   mimeType?: string | null;
+  usages?: MediaUsage[];
 };
 
 export function MediaPicker({
@@ -139,7 +153,11 @@ export function MediaPicker({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto" dir="rtl">
+      <DialogContent
+        className="z-[90] max-h-[90vh] max-w-4xl overflow-y-auto"
+        overlayClassName="z-[90]"
+        dir="rtl"
+      >
         <DialogHeader className="space-y-3 pe-10 text-start">
           <DialogTitle>انتخاب رسانه</DialogTitle>
           <div className="flex flex-wrap items-center gap-2">
@@ -258,6 +276,8 @@ export function MediaPicker({
               totalPages={totalPages}
               total={total}
               onPageChange={setPage}
+              mode="classic"
+              showModeSwitch={false}
             />
           </>
         )}
