@@ -5,26 +5,49 @@ import {motion} from 'framer-motion'
 import Image from 'next/image';
 import { mediaUrl } from '../../../lib/data/stubs';
 
+const CATEGORY_OVERLAY =
+  'linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.72) 32%, rgba(0,0,0,0.28) 58%, rgba(0,0,0,0.06) 100%)';
+
 const Items = ({ title, description, image, link, className }) => {
   return (
-    <Link href={link} className={`w-full  h-[470px] bg-cover relative bg-center  group cursor-pointer overflow-hidden ${className}`}>
-      <Image 
-      className='absolute h-full object-cover rounded-2xl top-0 w-full'
-      src={image} height={500} width={500} alt={title}/>
-      <div className='w-full h-full rounded-2xl  top-0 bg-linear-to-t from-black/90 via-black/50 to-transparent -z-10' />
-      {title && <div className='absolute bottom-0 flex flex-col gap-2 h-full items-center justify-end w-full'>
-        <div className='flex gap-2 pb-5 items-center'>
-          <div className='w-[10px] h-[10px] rounded-full  bg-amber-500 flex z-10' />
-          <h3 className='text-white font-bold text-xl   '>{title}</h3>
+    <Link
+      href={link}
+      className={`relative isolate block h-full min-h-[220px] w-full overflow-hidden rounded-2xl group cursor-pointer ${className}`}
+    >
+      <Image
+        fill
+        sizes="(max-width: 768px) 100vw, 33vw"
+        className="object-cover"
+        src={image}
+        alt={title || 'دسته وبلاگ'}
+      />
+      <div
+        className="absolute inset-0 z-[1]"
+        style={{ background: CATEGORY_OVERLAY }}
+        aria-hidden
+      />
+
+      {title && (
+        <div className="absolute inset-0 z-[2] flex flex-col items-center justify-end">
+          <div className="flex w-full items-center justify-center gap-2 px-4 pb-5 pt-16">
+            <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-amber-500" aria-hidden />
+            <h3 className="text-center text-lg font-bold text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.95)] md:text-xl">
+              {title}
+            </h3>
+          </div>
+          <div className="flex h-0 max-h-[50%] w-full flex-col gap-3 overflow-hidden px-4 pb-4 text-center text-white opacity-0 transition-all duration-700 group-hover:h-40 group-hover:opacity-100">
+            {description ? (
+              <p className="text-sm opacity-95 drop-shadow-[0_1px_6px_rgba(0,0,0,0.9)]">{description}</p>
+            ) : null}
+            <span className="mx-auto w-fit rounded-lg bg-[#F4C111] px-3 py-1 text-sm font-medium text-green-950">
+              مشاهده
+            </span>
+          </div>
         </div>
-        <div className='flex h-0 group-hover:h-[1000px] max-h-[50%] duration-700  flex-col gap-3 text-center text-white px-4 opacity-0 group-hover:opacity-100 transition-all'>
-          <p className='opacity-70'>{description}</p>
-          <p href={link} className='bg-[#F4C111] p-1 w-fit mx-auto px-3 rounded-lg text-green-950'>مشاهده</p>
-        </div>
-      </div>}
+      )}
     </Link>
-  )
-}
+  );
+};
 
 
 const BlogsByCategory = ({ categories = [], cms } = {}) => {
@@ -33,7 +56,7 @@ const BlogsByCategory = ({ categories = [], cms } = {}) => {
   const list = Array.isArray(categories) ? categories : [];
 
   return (
-    <div className='max-w-7xl lg:mx-auto mx-3 '>
+    <div className='relative z-10 max-w-7xl lg:mx-auto mx-3 overflow-x-clip min-w-0'>
       <div className='flex lg:flex-row flex-col justify-center text-center items-center mb-6'>
         <div>
           <p className='text-sm md:text-base'>
@@ -75,11 +98,12 @@ const BlogsByCategory = ({ categories = [], cms } = {}) => {
             viewport={{ once: true }}
             initial={initial}
             whileInView={whileInView}
-            className={itemClass }
+            className={`relative h-full w-full ${itemClass}`}
             transition={{ type: 'tween' , duration:'0.8' }}
             key={category._id || index}
             >
               <Items
+              className="h-[470px] max-lg:h-[225px]"
               link={`/blogs/${category.slug}`}
               title={category.title}
               

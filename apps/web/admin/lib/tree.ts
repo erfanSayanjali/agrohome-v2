@@ -29,7 +29,18 @@ export function flattenVisible<T extends { id: string }>(
   return out;
 }
 
-export function filterTree<T extends { id: string; title?: string | null; slug?: string | null }>(
+const TREE_SEARCH_KEYS = ["title", "slug", "nickName", "content", "email"] as const;
+
+function nodeMatchesQuery(node: object, q: string): boolean {
+  const rec = node as Record<string, unknown>;
+  return TREE_SEARCH_KEYS.some((key) =>
+    String(rec[key] ?? "")
+      .toLowerCase()
+      .includes(q)
+  );
+}
+
+export function filterTree<T extends { id: string }>(
   nodes: TreeNode<T>[],
   query: string
 ): TreeNode<T>[] {
@@ -39,13 +50,7 @@ export function filterTree<T extends { id: string; title?: string | null; slug?:
   const walk = (list: TreeNode<T>[]): TreeNode<T>[] => {
     const result: TreeNode<T>[] = [];
     for (const node of list) {
-      const selfMatch =
-        String(node.title || "")
-          .toLowerCase()
-          .includes(q) ||
-        String(node.slug || "")
-          .toLowerCase()
-          .includes(q);
+      const selfMatch = nodeMatchesQuery(node, q);
       const filteredChildren = walk(node.children || []);
       if (selfMatch || filteredChildren.length > 0) {
         result.push({
@@ -105,13 +110,7 @@ export function collectExpandIdsForFilter<T extends { id: string }>(
   const walk = (list: TreeNode<T>[], ancestors: string[]): boolean => {
     let any = false;
     for (const node of list) {
-      const selfMatch =
-        String((node as { title?: string }).title || "")
-          .toLowerCase()
-          .includes(q) ||
-        String((node as { slug?: string }).slug || "")
-          .toLowerCase()
-          .includes(q);
+      const selfMatch = nodeMatchesQuery(node, q);
       const childMatch = walk(node.children || [], [...ancestors, node.id]);
       if (selfMatch || childMatch) {
         for (const id of ancestors) expanded.add(id);

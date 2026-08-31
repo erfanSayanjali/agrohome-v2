@@ -20,7 +20,7 @@ function shouldSkip(node: Node): boolean {
   let el = node instanceof Element ? node : node.parentElement;
   while (el) {
     if (SKIP_TAGS.has(el.tagName)) return true;
-    if (el.isContentEditable) return true;
+    if (el instanceof HTMLElement && el.isContentEditable) return true;
     if (el.hasAttribute("data-no-persian-digits")) return true;
     if (el.getAttribute("role") === "textbox") return true;
     el = el.parentElement;

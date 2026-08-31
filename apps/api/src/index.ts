@@ -3,8 +3,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import Fastify from "fastify";
 import { buildApp } from "./app";
+import { assertProductionSecrets } from "./lib/auth";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+assertProductionSecrets();
 const port = Number(process.env.PORT || 3002);
 const host = process.env.HOST || "0.0.0.0";
 

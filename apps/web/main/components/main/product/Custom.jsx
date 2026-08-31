@@ -1,8 +1,9 @@
 import React from 'react';
+import { sanitizeHtml } from '../../../utils/sanitize';
 
 const Custom = ({value}) => {
     return (
-        <div dangerouslySetInnerHTML={{__html:value}}>
+        <div dangerouslySetInnerHTML={{__html: sanitizeHtml(value)}}>
             
         </div>
     );

@@ -10,8 +10,9 @@ import { DataToolbar } from "@/components/data/data-toolbar";
 import { ConfirmDelete } from "@/components/data/confirm-delete";
 import { CardGridSkeleton } from "@/components/ui/skeletons";
 import { Button } from "@/components/ui/button";
+import { IconActionButton } from "@/components/ui/icon-action-button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FormField } from "@/components/ui/form-field";
 import { Badge } from "@/components/ui/badge";
 import { Pagination } from "@/components/ui/pagination";
 import {
@@ -157,11 +158,8 @@ export default function MediaPage() {
                           )}
                         </div>
                         <div className="flex gap-1">
-                          <Button
-                            type="button"
-                            size="icon"
-                            variant="ghost"
-                            aria-label="ویرایش"
+                          <IconActionButton
+                            tooltip="ویرایش"
                             onClick={() => {
                               setEditItem(item);
                               setEditAlt(item.alt || "");
@@ -169,16 +167,10 @@ export default function MediaPage() {
                             }}
                           >
                             <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            type="button"
-                            size="icon"
-                            variant="ghost"
-                            aria-label="حذف"
-                            onClick={() => setDeleteId(item.id)}
-                          >
+                          </IconActionButton>
+                          <IconActionButton tooltip="حذف" onClick={() => setDeleteId(item.id)}>
                             <Trash2 className="h-4 w-4 text-[var(--admin-danger)]" />
-                          </Button>
+                          </IconActionButton>
                         </div>
                       </div>
                     </div>
@@ -213,8 +205,7 @@ export default function MediaPage() {
             <DialogTitle>آپلود رسانه</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <div className="space-y-2">
-              <Label htmlFor="media-file">فایل</Label>
+            <FormField label="فایل" htmlFor="media-file">
               <Input
                 id="media-file"
                 ref={fileRef}
@@ -222,16 +213,15 @@ export default function MediaPage() {
                 accept="image/*,video/*,application/pdf"
                 onChange={(e) => setFile(e.target.files?.[0] || null)}
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="media-alt">متن جایگزین (alt)</Label>
+            </FormField>
+            <FormField label="متن جایگزین (alt)" htmlFor="media-alt">
               <Input
                 id="media-alt"
                 value={alt}
                 onChange={(e) => setAlt(e.target.value)}
                 placeholder="توصیف تصویر برای دسترس‌پذیری"
               />
-            </div>
+            </FormField>
           </div>
           <DialogFooter>
             <Button type="button" variant="secondary" onClick={() => setUploadOpen(false)}>
@@ -286,17 +276,15 @@ export default function MediaPage() {
                 alt={editAlt || editName}
                 className="mx-auto max-h-48 rounded-md object-contain"
               />
-              <div className="space-y-2">
-                <Label>نام</Label>
+              <FormField label="نام">
                 <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>alt</Label>
+              </FormField>
+              <FormField label="alt">
                 <Input value={editAlt} onChange={(e) => setEditAlt(e.target.value)} />
-              </div>
+              </FormField>
               {editItem.usages?.length ? (
-                <div className="space-y-1.5">
-                  <Label>مصرف در</Label>
+                <div className="space-y-1.5 text-right" dir="rtl">
+                  <p className="text-right text-sm font-medium">مصرف در</p>
                   <div className="flex flex-wrap gap-1">
                     {editItem.usages.map((u) => (
                       <Badge

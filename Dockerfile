@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-
+# Deprecated entrypoint — prefer apps/web/main/Dockerfile via docker-compose.yml
 FROM node:22-alpine AS base
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 WORKDIR /app
@@ -17,6 +17,7 @@ COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_module
 COPY . .
 ENV NODE_ENV=production
 ENV NEXT_PUBLIC_API_URL=
+ENV API_URL=http://api:3002
 WORKDIR /app/apps/web/main
 RUN pnpm run build
 

@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { MessageSquare } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { CrudResourcePage } from "@/components/data/crud-resource-page";
+import { IconActionButton } from "@/components/ui/icon-action-button";
 import { categoryDisplayLabel, mapCategoryOption } from "@/lib/category-option";
 import type { MediaRef } from "@agrohome/shared";
 import { toMediaRef } from "@agrohome/shared";
@@ -113,7 +113,7 @@ export default function BlogsPage() {
       })}
       seoTarget={{ type: "blog" }}
       extraActions={(row) => (
-        <Button type="button" size="icon" variant="ghost" aria-label="نظرات" asChild>
+        <IconActionButton tooltip="نظرات" asChild>
           <Link
             href={`/comments?filters=${encodeURIComponent(
               JSON.stringify({ targetType: "blog", blogId: row.id })
@@ -121,7 +121,7 @@ export default function BlogsPage() {
           >
             <MessageSquare className="h-4 w-4" />
           </Link>
-        </Button>
+        </IconActionButton>
       )}
     />
   );

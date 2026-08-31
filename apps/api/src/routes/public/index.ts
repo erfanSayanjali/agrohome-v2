@@ -1,30 +1,76 @@
 import type { FastifyInstance } from "fastify";
-import { ok, okList, parseListQuery, prismaOrderBy } from "../../lib/helpers";
+import {
+  ok,
+  okList,
+  parseListQuery,
+  prismaOrderBy,
+  prismaOrderByAllowed,
+  mergeProtectedWhere,
+  pickPublicFilters,
+  MAX_BLOCKS_RESOLVE_COUNT,
+} from "../../lib/helpers";
 import { Fa } from "../../lib/errors";
+import { createRateLimiter } from "../../lib/rate-limit";
+import {
+  PUBLIC_AUTHOR_SELECT,
+  PUBLIC_COMMENT_SELECT,
+  PUBLIC_SEO_SELECT,
+} from "../../lib/public-selects";
+
+const publicPostRateLimit = createRateLimiter({
+  max: 30,
+  windowMs: 15 * 60 * 1000,
+  keyPrefix: "public-post",
+});
+
+const blocksResolveRateLimit = createRateLimiter({
+  max: 60,
+  windowMs: 15 * 60 * 1000,
+  keyPrefix: "blocks-resolve",
+});
+
+const PRODUCT_SORT_FIELDS = ["createdAt", "title", "views", "sortOrder"];
+const BLOG_SORT_FIELDS = ["createdAt", "title"];
+const COMMENT_SORT_FIELDS = ["createdAt", "rating"];
+
+const publicCommentSelect = {
+  ...PUBLIC_COMMENT_SELECT,
+  replies: {
+    where: { publish: true },
+    orderBy: { createdAt: "asc" as const },
+    select: PUBLIC_COMMENT_SELECT,
+  },
+} as const;
 
 async function resolveEntityQuery(
   app: FastifyInstance,
   payload: Record<string, unknown>
 ) {
   const entity = String(payload.entity || "");
-  const filters = (payload.filters as Record<string, unknown>) || {};
+  const filters = pickPublicFilters(
+    (payload.filters as Record<string, unknown>) || {},
+    entity === "product"
+      ? ["isFeatured", "categoryId"]
+      : entity === "blog"
+        ? ["categoryId", "authorId"]
+        : entity === "comment"
+          ? ["targetType", "productId", "blogId"]
+          : ["parentId"]
+  );
   const sort = String(payload.sort || "-createdAt");
   const limit = Math.min(50, Number(payload.limit) || 8);
   const categoryId = payload.categoryId ? String(payload.categoryId) : "";
 
   switch (entity) {
     case "product": {
-      const where: Record<string, unknown> = {
-        status: "AVAILABLE",
-        ...filters,
-      };
+      const where = mergeProtectedWhere({ status: "AVAILABLE" }, filters);
       if (payload.isFeatured === true) where.isFeatured = true;
       if (categoryId) {
         where.categories = { some: { categoryId } };
       }
       return app.prisma.product.findMany({
         where,
-        orderBy: prismaOrderBy(sort),
+        orderBy: prismaOrderByAllowed(sort, PRODUCT_SORT_FIELDS),
         take: limit,
         include: {
           categories: { include: { category: true } },
@@ -32,34 +78,33 @@ async function resolveEntityQuery(
       });
     }
     case "blog": {
-      const where: Record<string, unknown> = {
-        status: "published",
-        ...filters,
-      };
+      const where = mergeProtectedWhere({ status: "published" }, filters);
       if (categoryId) where.categoryId = categoryId;
       return app.prisma.blog.findMany({
         where,
-        orderBy: prismaOrderBy(sort),
+        orderBy: prismaOrderByAllowed(sort, BLOG_SORT_FIELDS),
         take: limit,
-        include: { category: true, author: true },
+        include: { category: true, author: { select: PUBLIC_AUTHOR_SELECT } },
       });
     }
     case "comment": {
-      const where: Record<string, unknown> = { publish: true, ...filters };
+      const where = mergeProtectedWhere({ publish: true }, filters);
       if (payload.targetType && payload.targetType !== "all") {
         where.targetType = String(payload.targetType);
       }
+      if (payload.showOnHome !== false) where.showOnHome = true;
       return app.prisma.comment.findMany({
         where,
-        orderBy: prismaOrderBy(sort),
+        orderBy: prismaOrderByAllowed(sort, COMMENT_SORT_FIELDS),
         take: limit,
+        select: PUBLIC_COMMENT_SELECT,
       });
     }
     case "blog_category": {
-      const where: Record<string, unknown> = { publish: true, ...filters };
+      const where = mergeProtectedWhere({ publish: true }, filters);
       if (payload.parentSlug) {
         const parent = await app.prisma.blogCategory.findFirst({
-          where: { slug: String(payload.parentSlug) },
+          where: { slug: String(payload.parentSlug), publish: true },
         });
         where.parentId = parent?.id ?? "__missing_parent__";
       }
@@ -70,7 +115,7 @@ async function resolveEntityQuery(
       });
     }
     case "product_category": {
-      const where: Record<string, unknown> = { publish: true, ...filters };
+      const where = mergeProtectedWhere({ publish: true }, filters);
       if (categoryId) where.parentId = categoryId;
       return app.prisma.productCategory.findMany({
         where,
@@ -112,7 +157,10 @@ async function findPageBySlug(app: FastifyInstance, slugRaw: string) {
     ? ["/", "home"]
     : Array.from(new Set([decoded, `/${bare}`, bare].filter(Boolean)));
   return app.prisma.cmsPage.findFirst({
-    where: { OR: candidates.map((slug) => ({ slug })) },
+    where: {
+      status: "published",
+      OR: candidates.map((slug) => ({ slug })),
+    },
     include: { seo: true },
   });
 }
@@ -156,7 +204,6 @@ function pageResponse(page: {
 }
 
 async function resolvePublicPage(app: FastifyInstance, reply: import("fastify").FastifyReply, slug: string) {
-  // همیشه بلوک‌های زنده صفحه‌ساز؛ snapshot فقط اگر بلوکی نبود
   const page = await findPageBySlug(app, slug);
   if (!page) return reply.notFound(Fa.notFound);
 
@@ -165,7 +212,7 @@ async function resolvePublicPage(app: FastifyInstance, reply: import("fastify").
     return pageResponse(page, live);
   }
 
-  if (page.status === "published" && page.publishedSnapshot) {
+  if (page.publishedSnapshot) {
     return pageResponse(page, page.publishedSnapshot);
   }
 
@@ -173,6 +220,15 @@ async function resolvePublicPage(app: FastifyInstance, reply: import("fastify").
 }
 
 export async function publicRoutes(app: FastifyInstance) {
+  app.get("/pages/slugs", async () => {
+    const pages = await app.prisma.cmsPage.findMany({
+      where: { status: "published" },
+      select: { slug: true },
+      orderBy: { slug: "asc" },
+    });
+    return ok(pages.map((page) => page.slug));
+  });
+
   /** مناسب برای slugهایی مثل / که در path خراب می‌شوند */
   app.get("/pages", async (request, reply) => {
     const q = request.query as { slug?: string };
@@ -200,6 +256,13 @@ export async function publicRoutes(app: FastifyInstance) {
           { label: "اینستاگرام", href: "https://www.instagram.com/agrohome" },
           { label: "تلگرام", href: "https://t.me/agrohome" },
         ],
+        headerLinks: [
+          { title: "صفحه اصلی", href: "/" },
+          { title: "محصولات", href: "/products" },
+          { title: "وبلاگ", href: "/blogs" },
+          { title: "درباره ما", href: "/about" },
+          { title: "تماس با ما", href: "/contact" },
+        ],
         footerLinkGroups: [
           {
             title: "دسترسی سریع",
@@ -224,7 +287,7 @@ export async function publicRoutes(app: FastifyInstance) {
     );
   });
 
-  app.post("/blocks/resolve", async (request) => {
+  app.post("/blocks/resolve", { preHandler: [blocksResolveRateLimit] }, async (request, reply) => {
     const { blocks } = (request.body ?? {}) as {
       blocks?: Array<{
         id: string;
@@ -232,29 +295,37 @@ export async function publicRoutes(app: FastifyInstance) {
         payload: Record<string, unknown>;
       }>;
     };
-    const result: Record<string, unknown> = {};
-    for (const block of blocks || []) {
-      if (block.sourceType === "ENTITY_QUERY") {
-        result[block.id] = await resolveEntityQuery(app, block.payload || {});
-      } else if (block.sourceType === "ENTITY_REF") {
-        result[block.id] = await resolveEntityRef(app, block.payload || {});
-      } else {
-        result[block.id] = block.payload;
-      }
+    const list = blocks || [];
+    if (list.length > MAX_BLOCKS_RESOLVE_COUNT) {
+      return reply.badRequest(Fa.badRequest);
     }
+    const resolved = await Promise.all(
+      list.map(async (block) => {
+        if (block.sourceType === "ENTITY_QUERY") {
+          return [block.id, await resolveEntityQuery(app, block.payload || {})] as const;
+        }
+        if (block.sourceType === "ENTITY_REF") {
+          return [block.id, await resolveEntityRef(app, block.payload || {})] as const;
+        }
+        return [block.id, block.payload] as const;
+      })
+    );
+    const result: Record<string, unknown> = {};
+    for (const [id, value] of resolved) result[id] = value;
     return ok(result);
   });
 
   app.get("/products", async (request) => {
     const q = parseListQuery(request.query as Record<string, unknown>);
-    const filters = { ...q.filters };
-    const categorySlugs = filters.categorySlugs;
-    delete filters.categorySlugs;
+    const categorySlugs = q.filters.categorySlugs;
+    const filters = pickPublicFilters(q.filters, [
+      "isFeatured",
+      "categoryId",
+      "slug",
+      "legacyId",
+    ]);
 
-    const where: Record<string, unknown> = {
-      status: "AVAILABLE",
-      ...filters,
-    };
+    const where = mergeProtectedWhere({ status: "AVAILABLE" }, filters);
 
     if (Array.isArray(categorySlugs) && categorySlugs.length) {
       where.categories = {
@@ -268,20 +339,32 @@ export async function publicRoutes(app: FastifyInstance) {
         { subtitle: { contains: q.search, mode: "insensitive" } },
       ];
     }
-    const total = await app.prisma.product.count({ where });
     if (q.fieldsMetaOnly || q.limit === 0) {
+      const total = await app.prisma.product.count({ where });
       return okList([], total, q.page, q.limit);
     }
-    const content = await app.prisma.product.findMany({
-      where,
-      orderBy: prismaOrderBy(q.sort),
-      skip: q.skip,
-      take: q.limit,
-      include: {
-        categories: { include: { category: true } },
-        packages: true,
-      },
-    });
+    const [total, content] = await Promise.all([
+      app.prisma.product.count({ where }),
+      app.prisma.product.findMany({
+        where,
+        orderBy: prismaOrderByAllowed(q.sort, PRODUCT_SORT_FIELDS),
+        skip: q.skip,
+        take: q.limit,
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          media: true,
+          status: true,
+          createdAt: true,
+          categories: {
+            select: {
+              category: { select: { id: true, title: true, slug: true } },
+            },
+          },
+        },
+      }),
+    ]);
     return okList(content, total, q.page, q.limit);
   });
 
@@ -297,15 +380,26 @@ export async function publicRoutes(app: FastifyInstance) {
       },
     });
     if (!product) return reply.notFound(Fa.notFound);
-    await app.prisma.product.update({
-      where: { id: product.id },
-      data: { views: { increment: 1 } },
-    });
+    void app.prisma.product
+      .update({
+        where: { id: product.id },
+        data: { views: { increment: 1 } },
+      })
+      .catch((err) => {
+        app.log.warn({ err, productId: product.id }, "product views increment failed");
+      });
     return ok(product);
   });
 
-  app.get("/products/:id/similar", async (request) => {
+  app.get("/products/:id/similar", async (request, reply) => {
     const { id } = request.params as { id: string };
+    const source = await app.prisma.product.findUnique({
+      where: { id },
+      select: { id: true, status: true },
+    });
+    if (!source || source.status !== "AVAILABLE") {
+      return reply.notFound(Fa.notFound);
+    }
     const links = await app.prisma.productCategoryOnProduct.findMany({
       where: { productId: id },
     });
@@ -359,10 +453,13 @@ export async function publicRoutes(app: FastifyInstance) {
 
   app.get("/blogs", async (request) => {
     const q = parseListQuery(request.query as Record<string, unknown>);
-    const where: Record<string, unknown> = {
-      status: "published",
-      ...q.filters,
-    };
+    const safeFilters = pickPublicFilters(q.filters, [
+      "categoryId",
+      "authorId",
+      "slug",
+      "legacyId",
+    ]);
+    const where = mergeProtectedWhere({ status: "published" }, safeFilters);
     if (q.search) {
       where.OR = [{ title: { contains: q.search, mode: "insensitive" } }];
     }
@@ -372,10 +469,10 @@ export async function publicRoutes(app: FastifyInstance) {
     }
     const content = await app.prisma.blog.findMany({
       where,
-      orderBy: prismaOrderBy(q.sort),
+      orderBy: prismaOrderByAllowed(q.sort, BLOG_SORT_FIELDS),
       skip: q.skip,
       take: q.limit,
-      include: { category: true, author: true },
+      include: { category: true, author: { select: PUBLIC_AUTHOR_SELECT } },
     });
     return okList(content, total, q.page, q.limit);
   });
@@ -384,7 +481,7 @@ export async function publicRoutes(app: FastifyInstance) {
     const { slug } = request.params as { slug: string };
     const blog = await app.prisma.blog.findFirst({
       where: { slug: decodeURIComponent(slug), status: "published" },
-      include: { category: true, author: true },
+      include: { category: true, author: { select: PUBLIC_AUTHOR_SELECT } },
     });
     if (!blog) return reply.notFound(Fa.notFound);
     return ok(blog);
@@ -409,35 +506,55 @@ export async function publicRoutes(app: FastifyInstance) {
 
   app.get("/comments/product/:productId", async (request) => {
     const { productId } = request.params as { productId: string };
-    const content = await app.prisma.comment.findMany({
-      where: { productId, publish: true, parentId: null, targetType: "product" },
-      include: {
-        replies: {
-          where: { publish: true },
-          orderBy: { createdAt: "asc" },
-        },
-      },
-      orderBy: { createdAt: "desc" },
+    const q = parseListQuery(request.query as Record<string, unknown>, {
+      limit: 5,
     });
-    return ok(content);
+    const where = {
+      productId,
+      publish: true,
+      parentId: null,
+      targetType: "product" as const,
+    };
+    const total = await app.prisma.comment.count({ where });
+    if (q.fieldsMetaOnly || q.limit === 0) {
+      return okList([], total, q.page, q.limit);
+    }
+    const content = await app.prisma.comment.findMany({
+      where,
+      select: publicCommentSelect,
+      orderBy: { createdAt: "desc" },
+      skip: q.skip,
+      take: q.limit,
+    });
+    return okList(content, total, q.page, q.limit);
   });
 
   app.get("/comments/blog/:blogId", async (request) => {
     const { blogId } = request.params as { blogId: string };
-    const content = await app.prisma.comment.findMany({
-      where: { blogId, publish: true, parentId: null, targetType: "blog" },
-      include: {
-        replies: {
-          where: { publish: true },
-          orderBy: { createdAt: "asc" },
-        },
-      },
-      orderBy: { createdAt: "desc" },
+    const q = parseListQuery(request.query as Record<string, unknown>, {
+      limit: 5,
     });
-    return ok(content);
+    const where = {
+      blogId,
+      publish: true,
+      parentId: null,
+      targetType: "blog" as const,
+    };
+    const total = await app.prisma.comment.count({ where });
+    if (q.fieldsMetaOnly || q.limit === 0) {
+      return okList([], total, q.page, q.limit);
+    }
+    const content = await app.prisma.comment.findMany({
+      where,
+      select: publicCommentSelect,
+      orderBy: { createdAt: "desc" },
+      skip: q.skip,
+      take: q.limit,
+    });
+    return okList(content, total, q.page, q.limit);
   });
 
-  app.post("/comments", async (request, reply) => {
+  app.post("/comments", { preHandler: [publicPostRateLimit] }, async (request, reply) => {
     const body = (request.body ?? {}) as {
       nickName?: string;
       content?: string;
@@ -454,12 +571,8 @@ export async function publicRoutes(app: FastifyInstance) {
 
     const nickName = String(body.nickName || "").trim();
     const content = String(body.content || "").trim();
-    const targetType = body.targetType;
-    if (!nickName || !content || !targetType) {
+    if (!nickName || !content) {
       return reply.badRequest(Fa.commentFieldsRequired);
-    }
-    if (!["product", "blog", "comment"].includes(targetType)) {
-      return reply.badRequest(Fa.commentTargetTypeInvalid);
     }
 
     const targetId = String(body.target_id || "").trim() || undefined;
@@ -467,27 +580,37 @@ export async function publicRoutes(app: FastifyInstance) {
     let blogId = body.blogId || undefined;
     let parentId = body.parentId || undefined;
 
+    let targetType = body.targetType;
+    if (!targetType) {
+      if (parentId) targetType = "comment";
+      else if (productId) targetType = "product";
+      else if (blogId) targetType = "blog";
+    }
+    if (!targetType || !["product", "blog", "comment"].includes(targetType)) {
+      return reply.badRequest(Fa.commentTargetInvalid);
+    }
+
     if (targetType === "product") {
       productId = productId || targetId;
       if (!productId) return reply.badRequest(Fa.commentTargetInvalid);
-      const product = await app.prisma.product.findUnique({
-        where: { id: productId },
+      const product = await app.prisma.product.findFirst({
+        where: { id: productId, status: "AVAILABLE" },
         select: { id: true },
       });
       if (!product) return reply.badRequest(Fa.commentTargetInvalid);
     } else if (targetType === "blog") {
       blogId = blogId || targetId;
       if (!blogId) return reply.badRequest(Fa.commentTargetInvalid);
-      const blog = await app.prisma.blog.findUnique({
-        where: { id: blogId },
+      const blog = await app.prisma.blog.findFirst({
+        where: { id: blogId, status: "published" },
         select: { id: true },
       });
       if (!blog) return reply.badRequest(Fa.commentTargetInvalid);
     } else {
       parentId = parentId || targetId;
       if (!parentId) return reply.badRequest(Fa.commentTargetInvalid);
-      const parent = await app.prisma.comment.findUnique({
-        where: { id: parentId },
+      const parent = await app.prisma.comment.findFirst({
+        where: { id: parentId, publish: true },
         select: { id: true, productId: true, blogId: true },
       });
       if (!parent) return reply.badRequest(Fa.commentTargetInvalid);
@@ -515,11 +638,12 @@ export async function publicRoutes(app: FastifyInstance) {
         blogId: blogId || null,
         parentId: parentId || null,
       },
+      select: PUBLIC_COMMENT_SELECT,
     });
     return ok(comment);
   });
 
-  app.post("/contact", async (request, reply) => {
+  app.post("/contact", { preHandler: [publicPostRateLimit] }, async (request, reply) => {
     const body = (request.body ?? {}) as {
       fullName?: string;
       subject?: string;
@@ -541,18 +665,29 @@ export async function publicRoutes(app: FastifyInstance) {
     return ok(item);
   });
 
-  app.get("/seo", async (request) => {
-    const q = parseListQuery(request.query as Record<string, unknown>);
-    const total = await app.prisma.seo.count({ where: q.filters });
-    if (q.fieldsMetaOnly || q.limit === 0) {
-      return okList([], total, q.page, q.limit);
-    }
-    const content = await app.prisma.seo.findMany({
-      where: q.filters,
-      take: q.limit,
-      skip: q.skip,
-      orderBy: prismaOrderBy(q.sort),
+  app.get("/seo/by-path", async (request, reply) => {
+    const q = request.query as { targetPath?: string };
+    const targetPath = typeof q.targetPath === "string" ? q.targetPath.trim() : "";
+    if (!targetPath) return reply.badRequest(Fa.badRequest);
+    const seo = await app.prisma.seo.findFirst({
+      where: { targetPath: targetPath === "/" ? "/" : targetPath },
+      select: PUBLIC_SEO_SELECT,
     });
-    return okList(content, total, q.page, q.limit);
+    return ok(seo);
+  });
+
+  app.get("/seo/by-target", async (request, reply) => {
+    const q = request.query as { targetType?: string; targetLegacyId?: string };
+    if (!q.targetType || !q.targetLegacyId) {
+      return reply.badRequest(Fa.badRequest);
+    }
+    const seo = await app.prisma.seo.findFirst({
+      where: {
+        targetType: q.targetType,
+        targetLegacyId: q.targetLegacyId,
+      },
+      select: PUBLIC_SEO_SELECT,
+    });
+    return ok(seo);
   });
 }

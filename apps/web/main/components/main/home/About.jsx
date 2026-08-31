@@ -78,7 +78,7 @@ const About = ({ cms } = {}) => {
   const yearsLabel = cms?.yearsLabel || 'سال تجربه'
 
   return (
-    <div className="z-50 max-w-7xl mx-3 flex lg:flex-row flex-col-reverse md:gap-20 gap-10 lg:mx-auto my-10">
+    <div className="z-50 max-w-7xl mx-3 flex lg:flex-row flex-col-reverse md:gap-20 gap-10 lg:mx-auto my-10 min-w-0">
       <div className="grid grid-cols-[1fr_1fr] grid-rows-[140px_220px] w-full lg:w-[500px] gap-4 items-stretch">
         <MotionImage
           from="x"

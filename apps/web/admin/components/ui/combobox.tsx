@@ -43,10 +43,10 @@ export function Combobox({
       <PopoverPrimitive.Trigger asChild>
         <Button
           type="button"
-          variant="outline"
+          variant="field"
           role="combobox"
           aria-expanded={open}
-          className={cn("w-full justify-between font-normal text-start", className)}
+          className={cn("w-full justify-between text-start", className)}
         >
           <span className={cn("truncate", !selected && "text-[var(--admin-muted)]")}>
             {selected?.label || placeholder}

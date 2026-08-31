@@ -10,7 +10,7 @@ const NewestBlog = ({ blogs = [], cms } = {}) => {
   const list = Array.isArray(blogs) ? blogs : [];
 
   return (
-    <div className="max-w-7xl lg:mx-auto mx-3 my-20">
+    <div className="max-w-7xl lg:mx-auto mx-3 my-20 overflow-x-clip min-w-0">
       <div className="flex items-center justify-between">
         <div>
           <p>{eyebrow}</p>

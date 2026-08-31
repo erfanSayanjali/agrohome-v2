@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Form from '../product/Form';
 import { mediaAlt, mediaUrl, submitContact } from '../../../lib/data/stubs';
+import { UseSwal } from '../../../utils/helper.js';
 
 const inputs = [
   { value: '', id: 'fullName', placeholder: 'نام و نام خانوادگی', colspan: 1 },
@@ -30,12 +31,22 @@ const ContactFormSection = ({ cms } = {}) => {
     const payload = Object.fromEntries(
       (Array.isArray(fields) ? fields : []).map((f) => [f.id?.trim(), f.value])
     );
+    if (!String(payload.message || '').trim()) {
+      UseSwal('error', 'متن پیام الزامی است.');
+      return;
+    }
     setStatus('loading');
     try {
       const res = await submitContact(payload);
-      setStatus(res?.ok ? 'success' : 'error');
+      if (res?.ok) {
+        UseSwal('success', 'پیام شما با موفقیت ارسال شد.');
+      } else {
+        UseSwal('error', res?.message || 'ارسال پیام ناموفق بود. دوباره تلاش کنید.');
+      }
     } catch {
-      setStatus('error');
+      UseSwal('error', 'ارسال پیام ناموفق بود. دوباره تلاش کنید.');
+    } finally {
+      setStatus('idle');
     }
   }
 
@@ -82,12 +93,6 @@ const ContactFormSection = ({ cms } = {}) => {
           }
           data={inputs}
         />
-        {status === 'success' ? (
-          <p className="mt-3 text-sm text-green-800">پیام شما با موفقیت ارسال شد.</p>
-        ) : null}
-        {status === 'error' ? (
-          <p className="mt-3 text-sm text-red-600">ارسال پیام ناموفق بود. دوباره تلاش کنید.</p>
-        ) : null}
       </div>
       <iframe
         className="h-full w-full md:w-[230px]"

@@ -5,7 +5,12 @@
       "id": "cmsmwzvyx00002kud9f349sgj",
       "legacyId": "admin-role",
       "title": "مدیر کل",
-      "permissions": [],
+      "permissions": [
+        {
+          "entity": "*",
+          "actions": ["create", "read", "update", "delete"]
+        }
+      ],
       "createdAt": "2026-08-10T07:33:13.497Z",
       "updatedAt": "2026-08-10T07:33:13.497Z"
     }
@@ -14,12 +19,25 @@
     {
       "id": "cmsmwzw2s00012kudahs8pxtx",
       "legacyId": null,
-      "phone": "09120000000",
+      "phone": "09125153541",
       "firstName": "Admin",
       "lastName": "Agrohome",
       "nickname": null,
       "media": null,
-      "passwordHash": "$2b$10$pEb6FsNHXuE3R4l.2JH6IeAJDK8lCGFrOUYszxue7BNQo5SMV1zyS",
+      "passwordHash": null,
+      "roleId": "cmsmwzvyx00002kud9f349sgj",
+      "createdAt": "2026-08-10T07:33:13.636Z",
+      "updatedAt": "2026-08-10T11:04:54.000Z"
+    },
+    {
+      "id": "cmsmwzw2s00022kudahs8pxty",
+      "legacyId": null,
+      "phone": "09907043664",
+      "firstName": "Erfan",
+      "lastName": null,
+      "nickname": null,
+      "media": null,
+      "passwordHash": null,
       "roleId": "cmsmwzvyx00002kud9f349sgj",
       "createdAt": "2026-08-10T07:33:13.636Z",
       "updatedAt": "2026-08-10T11:04:54.000Z"
@@ -2821,6 +2839,28 @@
       {
         "href": "https://t.me/agrohome",
         "label": "تلگرام"
+      }
+    ],
+    "headerLinks": [
+      {
+        "href": "/",
+        "title": "صفحه اصلی"
+      },
+      {
+        "href": "/products",
+        "title": "محصولات"
+      },
+      {
+        "href": "/blogs",
+        "title": "وبلاگ"
+      },
+      {
+        "href": "/about",
+        "title": "درباره ما"
+      },
+      {
+        "href": "/contact",
+        "title": "تماس با ما"
       }
     ],
     "footerLinkGroups": [

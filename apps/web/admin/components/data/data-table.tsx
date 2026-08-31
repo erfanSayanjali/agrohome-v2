@@ -32,6 +32,7 @@ import { TableLoadMoreSkeleton, TableSkeleton } from "@/components/ui/skeletons"
 import { Button } from "@/components/ui/button";
 import { ColumnFilterButton } from "@/components/data/column-filter";
 import { cn } from "@/lib/utils";
+import { ActionTooltip } from "@/components/ui/icon-action-button";
 import type { ColumnFilterDef, FilterValue } from "@/lib/table-filters";
 import { getFilterFieldKey } from "@/lib/table-filters";
 import type { PaginationMode } from "@/lib/pagination-mode";
@@ -326,19 +327,21 @@ function SortableTableRow({
       className={cn(isDragging && "relative z-10 bg-[var(--admin-surface)] opacity-60")}
     >
       <TableCell className="w-0 px-2">
-        <button
-          type="button"
-          className={cn(
-            "inline-flex h-8 w-8 cursor-grab items-center justify-center rounded-md text-[var(--admin-muted)]",
-            "hover:bg-[var(--admin-accent)]/10 hover:text-[var(--admin-accent)]",
-            "active:cursor-grabbing"
-          )}
-          aria-label="جابجایی"
-          {...attributes}
-          {...listeners}
-        >
-          <GripVertical className="h-4 w-4" />
-        </button>
+        <ActionTooltip label="جابجایی">
+          <button
+            type="button"
+            className={cn(
+              "inline-flex h-8 w-8 cursor-grab items-center justify-center rounded-md text-[var(--admin-muted)]",
+              "hover:bg-[var(--admin-accent)]/10 hover:text-[var(--admin-accent)]",
+              "active:cursor-grabbing"
+            )}
+            aria-label="جابجایی"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
+        </ActionTooltip>
       </TableCell>
       {children}
     </TableRow>

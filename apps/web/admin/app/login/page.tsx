@@ -1,24 +1,31 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { FormEvent, Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { apiPost, ApiError, unwrap } from "@/lib/api";
 import { useAuth } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FormField } from "@/components/ui/form-field";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 function LoginForm() {
   const router = useRouter();
   const search = useSearchParams();
-  const next = search.get("next") || "/";
+  const nextParam = search.get("next") || "/";
+
+  function safeNextPath(value: string): string {
+    if (!value.startsWith("/") || value.startsWith("//")) return "/";
+    return value;
+  }
+
+  const next = safeNextPath(nextParam);
   const { refresh } = useAuth();
 
-  const [phone, setPhone] = useState("09120000000");
-  const [password, setPassword] = useState("admin123");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [devHint, setDevHint] = useState<string | null>(null);
@@ -27,6 +34,50 @@ function LoginForm() {
   async function afterLogin() {
     await refresh();
     router.replace(next);
+  }
+
+  async function loginWithPassword(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      await apiPost("/auth/login-password", { phone, password });
+      toast.success("ورود موفق");
+      await afterLogin();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "ورود ناموفق");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function requestOtp() {
+    setBusy(true);
+    try {
+      const res = await apiPost<{ content: { message?: string } }>(
+        "/auth/request-otp",
+        { phone }
+      );
+      setOtpSent(true);
+      setDevHint("کد را از لاگ سرور API کپی کنید (Phase 1 بدون SMS).");
+      toast.success(unwrap(res)?.message || "کد ارسال شد");
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "خطا");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function verifyOtp() {
+    setBusy(true);
+    try {
+      await apiPost("/auth/verify-otp", { phone, code: otpCode });
+      toast.success("ورود موفق");
+      await afterLogin();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "کد نامعتبر");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -48,122 +99,87 @@ function LoginForm() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="password" className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="phone-pass">موبایل</Label>
-                <Input
-                  id="phone-pass"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="09xxxxxxxxx"
-                  dir="ltr"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">رمز عبور</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  dir="ltr"
-                />
-              </div>
-              <Button
-                type="button"
-                className="w-full"
-                disabled={busy}
-                onClick={async () => {
-                  setBusy(true);
-                  try {
-                    await apiPost("/auth/login-password", { phone, password });
-                    toast.success("ورود موفق");
-                    await afterLogin();
-                  } catch (err) {
-                    toast.error(err instanceof ApiError ? err.message : "ورود ناموفق");
-                  } finally {
-                    setBusy(false);
-                  }
-                }}
-              >
-                ورود
-              </Button>
+            <TabsContent value="password">
+              <form className="space-y-4" onSubmit={loginWithPassword}>
+                <FormField label="موبایل" htmlFor="phone-pass">
+                  <Input
+                    id="phone-pass"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="09xxxxxxxxx"
+                    dir="ltr"
+                    autoComplete="username"
+                  />
+                </FormField>
+                <FormField label="رمز عبور" htmlFor="password">
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    dir="ltr"
+                    autoComplete="current-password"
+                  />
+                </FormField>
+                <Button type="submit" className="w-full cursor-pointer" disabled={busy}>
+                  ورود
+                </Button>
+              </form>
             </TabsContent>
 
-            <TabsContent value="otp" className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="phone-otp">موبایل</Label>
-                <Input
-                  id="phone-otp"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="09xxxxxxxxx"
-                  dir="ltr"
-                />
-              </div>
-              {otpSent ? (
-                <div className="space-y-2">
-                  <Label htmlFor="otp">کد تأیید</Label>
+            <TabsContent value="otp">
+              <form
+                className="space-y-4"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void (otpSent ? verifyOtp() : requestOtp());
+                }}
+              >
+                <FormField label="موبایل" htmlFor="phone-otp">
                   <Input
-                    id="otp"
-                    value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value)}
+                    id="phone-otp"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="09xxxxxxxxx"
                     dir="ltr"
+                    autoComplete="tel"
                   />
-                  {devHint ? (
-                    <p className="rounded-md bg-white/5 px-3 py-2 text-xs text-[var(--admin-muted)]">
-                      در حالت توسعه کد در کنسول API چاپ می‌شود. {devHint}
-                    </p>
-                  ) : null}
+                </FormField>
+                {otpSent ? (
+                  <FormField label="کد تأیید" htmlFor="otp">
+                    <Input
+                      id="otp"
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value)}
+                      dir="ltr"
+                      autoComplete="one-time-code"
+                    />
+                    {devHint ? (
+                      <p className="rounded-md bg-white/5 px-3 py-2 text-xs text-[var(--admin-muted)]">
+                        در حالت توسعه کد در کنسول API چاپ می‌شود. {devHint}
+                      </p>
+                    ) : null}
+                  </FormField>
+                ) : null}
+                <div className="flex gap-2">
+                  <Button
+                    type={otpSent ? "button" : "submit"}
+                    variant="secondary"
+                    className="flex-1 cursor-pointer"
+                    disabled={busy}
+                    onClick={otpSent ? () => void requestOtp() : undefined}
+                  >
+                    دریافت کد
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="flex-1 cursor-pointer"
+                    disabled={busy || !otpSent}
+                  >
+                    تأیید
+                  </Button>
                 </div>
-              ) : null}
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="flex-1"
-                  disabled={busy}
-                  onClick={async () => {
-                    setBusy(true);
-                    try {
-                      const res = await apiPost<{ content: { message?: string } }>(
-                        "/auth/request-otp",
-                        { phone }
-                      );
-                      setOtpSent(true);
-                      setDevHint(
-                        "کد را از لاگ سرور API کپی کنید (Phase 1 بدون SMS)."
-                      );
-                      toast.success(unwrap(res)?.message || "کد ارسال شد");
-                    } catch (err) {
-                      toast.error(err instanceof ApiError ? err.message : "خطا");
-                    } finally {
-                      setBusy(false);
-                    }
-                  }}
-                >
-                  دریافت کد
-                </Button>
-                <Button
-                  type="button"
-                  className="flex-1"
-                  disabled={busy || !otpSent}
-                  onClick={async () => {
-                    setBusy(true);
-                    try {
-                      await apiPost("/auth/verify-otp", { phone, code: otpCode });
-                      toast.success("ورود موفق");
-                      await afterLogin();
-                    } catch (err) {
-                      toast.error(err instanceof ApiError ? err.message : "کد نامعتبر");
-                    } finally {
-                      setBusy(false);
-                    }
-                  }}
-                >
-                  تأیید
-                </Button>
-              </div>
+              </form>
             </TabsContent>
           </Tabs>
         </CardContent>

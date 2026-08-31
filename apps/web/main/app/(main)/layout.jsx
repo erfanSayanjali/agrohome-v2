@@ -11,10 +11,11 @@ const mainLayout = async ({ children }) => {
   ]);
 
   return (
-    <div>
+    <div className="overflow-x-clip">
       <Header
         product_category={product_category?.content || []}
         logoUrl={settings.logoUrl || '/logo.png'}
+        headerLinks={settings.headerLinks || []}
       />
       {children}
       <Footer data={settings} />

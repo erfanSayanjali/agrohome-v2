@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Plus, Rocket, ArrowRight, Search } from "lucide-react";
-import { apiDelete, apiGet, apiPost, apiPut, ApiError, unwrap } from "@/lib/api";
+import { Plus, ArrowRight, Search } from "lucide-react";
+import { apiDelete, apiGet, apiPut, ApiError, unwrap } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -58,6 +58,7 @@ export function PageBuilderShell({ pageId }: PageBuilderShellProps) {
   const router = useRouter();
   const [page, setPage] = useState<EditorPage | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selection, setSelection] = useState<Selection | null>(null);
   const [busy, setBusy] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
@@ -67,13 +68,17 @@ export function PageBuilderShell({ pageId }: PageBuilderShellProps) {
 
   const load = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const res = await apiGet<{ content: EditorPage }>(`/admin/pages/${pageId}/editor`);
       const data = unwrap(res);
       setPage(data);
       setSeo(seoRecordToForm(data.seo, buildSeoPath("page", data.slug || "")));
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "خطا در بارگذاری ادیتور");
+      const message = err instanceof ApiError ? err.message : "خطا در بارگذاری ادیتور";
+      setLoadError(message);
+      setPage(null);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -196,11 +201,24 @@ export function PageBuilderShell({ pageId }: PageBuilderShellProps) {
     }
   }
 
-  if (loading || !page) {
+  if (loading) {
     return (
       <div className="space-y-4 p-6">
         <Skeleton className="h-10 w-64" />
         <Skeleton className="min-h-[36rem] w-full" />
+      </div>
+    );
+  }
+
+  if (loadError || !page) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 p-12 text-center">
+        <p className="text-sm text-[var(--admin-muted)]">
+          {loadError || "صفحه یافت نشد"}
+        </p>
+        <Button type="button" variant="outline" onClick={() => void load()}>
+          تلاش مجدد
+        </Button>
       </div>
     );
   }
@@ -212,14 +230,12 @@ export function PageBuilderShell({ pageId }: PageBuilderShellProps) {
     >
       {/* Toolbar */}
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[var(--admin-border)] bg-[var(--admin-surface)] px-4 py-2.5">
-        <div className="min-w-0 text-start">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="truncate text-base font-semibold">{page.title}</h1>
-            <Badge variant={page.status === "published" ? "success" : "muted"}>
-              {page.status}
-            </Badge>
-          </div>
-          <p className="truncate text-xs text-[var(--admin-muted)]" dir="ltr">
+        <div className="flex min-w-0 items-center gap-2 text-start">
+          <h1 className="truncate text-base font-semibold">{page.title}</h1>
+          <Badge variant={page.status === "published" ? "success" : "muted"} className="shrink-0">
+            {page.status}
+          </Badge>
+          <p className="min-w-0 truncate text-xs text-[var(--admin-muted)]" dir="ltr">
             /{page.slug.replace(/^\//, "")}
           </p>
         </div>
@@ -235,22 +251,6 @@ export function PageBuilderShell({ pageId }: PageBuilderShellProps) {
           <Button type="button" variant="secondary" size="sm" onClick={() => setLibraryOpen(true)}>
             <Plus className="h-4 w-4" />
             افزودن سکشن
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            onClick={async () => {
-              try {
-                await apiPost(`/admin/pages/${page.id}/publish`);
-                toast.success("صفحه منتشر شد");
-                await load();
-              } catch (err) {
-                toast.error(err instanceof ApiError ? err.message : "خطا");
-              }
-            }}
-          >
-            <Rocket className="h-4 w-4" />
-            Publish
           </Button>
         </div>
       </div>

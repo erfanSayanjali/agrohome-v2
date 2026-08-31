@@ -11,7 +11,7 @@ const FeatureItem = ({title , value}) => {
     );
 }
 const Specifications = ({label , specification}) => {
-    const attributeSpec = specification.filter(item=>item.specification_id.position !== 'extra')
+    const attributeSpec = (Array.isArray(specification) ? specification : []).filter(item=>item?.specification_id?.position !== 'extra')
    
     
     return (
@@ -22,7 +22,7 @@ const Specifications = ({label , specification}) => {
                     attributeSpec.length?
                     attributeSpec.map((item,i)=>{
 
-                        return<FeatureItem key={i}  title={item.specification_id.title} value={item.value} />
+                        return<FeatureItem key={item._id || i}  title={item.specification_id?.title || ''} value={item.value} />
                     })
                     :''
                 }

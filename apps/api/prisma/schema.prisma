@@ -81,6 +81,7 @@ model OtpChallenge {
   createdAt DateTime @default(now())
 
   @@index([phone, expiresAt])
+  @@index([phone, consumed, expiresAt])
 }
 
 model ProductCategory {
@@ -97,6 +98,8 @@ model ProductCategory {
   sortOrder   Int               @default(0)
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
+
+  @@index([parentId, publish])
 }
 
 model Product {
@@ -119,6 +122,8 @@ model Product {
   comments      Comment[]
   createdAt     DateTime                   @default(now())
   updatedAt     DateTime                   @updatedAt
+
+  @@index([status, createdAt])
 }
 
 model ProductCategoryOnProduct {
@@ -128,6 +133,7 @@ model ProductCategoryOnProduct {
   category   ProductCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@id([productId, categoryId])
+  @@index([categoryId])
 }
 
 model Package {
@@ -140,6 +146,8 @@ model Package {
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([productId])
 }
 
 model Specification {
@@ -164,6 +172,9 @@ model ProductSpecification {
   specification   Specification @relation(fields: [specificationId], references: [id], onDelete: Cascade)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+
+  @@index([productId])
+  @@unique([productId, specificationId])
 }
 
 model TagCategory {
@@ -195,6 +206,7 @@ model ProductTag {
   tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([productId, tagId])
+  @@index([tagId])
 }
 
 model BlogCategory {
@@ -211,6 +223,8 @@ model BlogCategory {
   blogs       Blog[]
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
+
+  @@index([parentId, publish])
 }
 
 model Blog {
@@ -228,6 +242,9 @@ model Blog {
   comments     Comment[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
+
+  @@index([status, createdAt])
+  @@index([categoryId])
 }
 
 model Comment {
@@ -239,6 +256,8 @@ model Comment {
   website    String?
   rating     Float?
   publish    Boolean           @default(false)
+  /// نمایش در اسلایدر نظرات صفحه اصلی
+  showOnHome Boolean           @default(false)
   targetType CommentTargetType
   productId  String?
   product    Product?          @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -249,6 +268,11 @@ model Comment {
   replies    Comment[]         @relation("CommentReplies")
   createdAt  DateTime          @default(now())
   updatedAt  DateTime          @updatedAt
+
+  @@index([publish, showOnHome])
+  @@index([productId, publish])
+  @@index([blogId, publish])
+  @@index([parentId])
 }
 
 /// Composable CMS page (/, /about, /contact, custom landings).
@@ -259,7 +283,7 @@ model CmsPage {
   status             CmsPageStatus @default(draft)
   publishedAt        DateTime?
   /// ISR / cache hint for main
-  revalidateSeconds  Int           @default(600)
+  revalidateSeconds  Int           @default(3600)
   /// Structural snapshot of published blocks for fast SSR reads
   publishedSnapshot  Json?
   blocks             ContentBlock[]
@@ -270,13 +294,14 @@ model CmsPage {
   @@index([status])
 }
 
-/// Singleton site branding + footer settings (logo, favicon, socials, footer link groups).
+/// Singleton site branding + header/footer settings (logo, favicon, nav, socials, footer link groups).
 model SiteSettings {
   id               String   @id @default("default")
   logoUrl          String?
   faviconUrl       String?
   footerText       String?
   socialLinks      Json     @default("[]")
+  headerLinks      Json     @default("[]")
   footerLinkGroups Json     @default("[]")
   updatedAt        DateTime @updatedAt
 }
@@ -335,6 +360,8 @@ model Media {
   size      Int?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([url])
 }
 
 model ContactMessage {

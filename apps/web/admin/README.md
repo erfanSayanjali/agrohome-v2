@@ -2,24 +2,33 @@
 
 Next.js App Router + دیزاین‌سیستم داخلی (Radix primitives + Tailwind v4).
 
+پایه مسیر: **`/admin`** (`basePath`). در پروداکشن پروکسی همین path را به این اپ می‌فرستد.
+
 ## اجرا
 
 ```bash
 # از ریشه مونوریپو
 pnpm --filter @agrohome/api dev      # :3002
-pnpm --filter @agrohome/admin dev    # :4001
+pnpm --filter @agrohome/admin dev    # :4001 → http://localhost:4001/admin
 ```
 
 ورود پیش‌فرض seed: `09120000000` / `admin123`
 
+برای تست همان شکل پرود (یک origin):
+
+```bash
+docker compose -f docker-compose.proxy.yml up
+# سپس http://localhost:8080/admin
+```
+
 ## Env
 
-کپی از `.env.local.example`:
+کپی از `.env.example`:
 
 | متغیر | توضیح |
 |-------|--------|
 | `API_URL` | مبدأ API برای rewrite سمت سرور Next (پیش‌فرض `http://localhost:3002`) |
-| `NEXT_PUBLIC_API_URL` | معمولاً خالی؛ درخواست‌های مرورگر از همان origin ادمین می‌روند و Next به API پروکسی می‌کند |
+| `NEXT_PUBLIC_API_URL` | معمولاً خالی؛ درخواست‌های مرورگر از همان origin (`/api/v1`) می‌روند و Next/پروکسی به API می‌رساند |
 
 ## دیزاین‌سیستم
 

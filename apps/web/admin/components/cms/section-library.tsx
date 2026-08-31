@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { LayoutTemplate } from "lucide-react";
-import { apiPost, ApiError } from "@/lib/api";
+import { apiDelete, apiGet, apiPost, ApiError, unwrap } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -62,19 +62,28 @@ export function SectionLibrary({
     }
   }
 
+  async function replacePageBlocks() {
+    const res = await apiGet<{ content: { blocks?: Array<{ id: string }> } }>(
+      `/admin/pages/${pageId}/editor`
+    );
+    const editor = unwrap(res);
+    for (const block of editor.blocks ?? []) {
+      await apiDelete(`/admin/blocks/${block.id}`);
+    }
+  }
+
   async function insertHomeTemplate() {
     setBusy("home");
     try {
-      let order = nextSortOrder;
+      await replacePageBlocks();
       for (const tpl of HOME_PAGE_TEMPLATE) {
         await apiPost("/admin/blocks", {
           ownerType: "PAGE",
           pageId,
           ...tpl,
-          sortOrder: order++,
         });
       }
-      toast.success("قالب صفحه اصلی اضافه شد");
+      toast.success("قالب صفحه اصلی جایگزین شد");
       onInserted();
       onOpenChange(false);
     } catch (err) {
@@ -145,7 +154,7 @@ export function SectionLibrary({
               onClick={() => void insertHomeTemplate()}
             >
               <LayoutTemplate className="h-4 w-4" />
-              افزودن هر ۸ سکشن صفحه اصلی
+              جایگزینی ۸ سکشن صفحه اصلی
             </Button>
             <Button
               type="button"

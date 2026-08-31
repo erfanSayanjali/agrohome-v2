@@ -9,12 +9,22 @@ type HotspotProps = {
   className?: string;
   children: React.ReactNode;
   label?: string;
+  /** داخل <p>/<h*> باید span باشد تا HTML نامعتبر نشود */
+  as?: "div" | "span";
 };
 
 /** ناحیه کلیک‌پذیر روی بوم برای زیر‌سکشن */
-export function Hotspot({ path, selected, onSelect, className, children, label }: HotspotProps) {
+export function Hotspot({
+  path,
+  selected,
+  onSelect,
+  className,
+  children,
+  label,
+  as: Tag = "div",
+}: HotspotProps) {
   return (
-    <div
+    <Tag
       role="button"
       tabIndex={0}
       onClick={(e) => {
@@ -43,6 +53,6 @@ export function Hotspot({ path, selected, onSelect, className, children, label }
           {label}
         </span>
       ) : null}
-    </div>
+    </Tag>
   );
 }

@@ -5,6 +5,7 @@ import { apiPut, ApiError } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CrudResourcePage } from "@/components/data/crud-resource-page";
+import { ActionTooltip } from "@/components/ui/icon-action-button";
 
 type Row = {
   id: string;
@@ -68,23 +69,25 @@ export default function ContactsPage() {
       ]}
       createDefaults={{ status: "new" }}
       extraActions={(row, reload) => (
-        <Button
-          type="button"
-          size="sm"
-          variant="ghost"
-          onClick={async () => {
-            const next = row.status === "new" ? "read" : row.status === "read" ? "archived" : "new";
-            try {
-              await apiPut(`/admin/contact-messages/${row.id}`, { status: next });
-              toast.success(`وضعیت: ${next}`);
-              reload();
-            } catch (err) {
-              toast.error(err instanceof ApiError ? err.message : "خطا");
-            }
-          }}
-        >
-          تغییر وضعیت
-        </Button>
+        <ActionTooltip label="تغییر وضعیت پیام">
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={async () => {
+              const next = row.status === "new" ? "read" : row.status === "read" ? "archived" : "new";
+              try {
+                await apiPut(`/admin/contact-messages/${row.id}`, { status: next });
+                toast.success(`وضعیت: ${next}`);
+                reload();
+              } catch (err) {
+                toast.error(err instanceof ApiError ? err.message : "خطا");
+              }
+            }}
+          >
+            تغییر وضعیت
+          </Button>
+        </ActionTooltip>
       )}
     />
   );

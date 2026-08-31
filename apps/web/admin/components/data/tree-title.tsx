@@ -2,6 +2,7 @@
 
 import { ChevronDown, ChevronLeft } from "lucide-react";
 import { cn, formatFaNumber } from "@/lib/utils";
+import { ActionTooltip } from "@/components/ui/icon-action-button";
 
 type TreeTitleProps = {
   depth: number;
@@ -28,22 +29,24 @@ export function TreeTitle({
       style={{ paddingInlineStart: `${depth * 1.15}rem` }}
     >
       {hasChildren ? (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggle?.();
-          }}
-          className={cn(
-            "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
-            "text-[var(--admin-muted)] transition-colors",
-            "hover:bg-[var(--admin-accent)]/10 hover:text-[var(--admin-accent)]"
-          )}
-          aria-label={expanded ? "بستن زیرشاخه‌ها" : "باز کردن زیرشاخه‌ها"}
-          aria-expanded={expanded}
-        >
-          {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-        </button>
+        <ActionTooltip label={expanded ? "بستن زیرشاخه‌ها" : "باز کردن زیرشاخه‌ها"}>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggle?.();
+            }}
+            className={cn(
+              "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
+              "text-[var(--admin-muted)] transition-colors",
+              "hover:bg-[var(--admin-accent)]/10 hover:text-[var(--admin-accent)]"
+            )}
+            aria-label={expanded ? "بستن زیرشاخه‌ها" : "باز کردن زیرشاخه‌ها"}
+            aria-expanded={expanded}
+          >
+            {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </button>
+        </ActionTooltip>
       ) : (
         <span
           className="inline-flex h-7 w-7 shrink-0 items-center justify-center"

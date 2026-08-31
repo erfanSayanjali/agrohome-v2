@@ -50,7 +50,7 @@ const AboutStory = ({ cms } = {}) => {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={d} alt="about4" className="row-span-1 h-[140px] w-full rounded-2xl object-cover" />
       </div>
-      <div className="flex flex-col py-5 md:w-[calc(100%-450px)]">
+      <div className="flex flex-col justify-start pb-5 pt-0 md:w-[calc(100%-450px)] md:py-5">
         <p>{eyebrow}</p>
         <h1 className="my-4 text-xl font-extrabold">
           {parts.length > 1 ? (

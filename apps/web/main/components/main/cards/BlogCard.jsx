@@ -6,11 +6,11 @@ import { IoIosArrowRoundBack } from "react-icons/io";
 import Link from 'next/link';
 import { mediaUrl } from '../../../lib/data/stubs';
 
-const BlogCard = ({ data }) => {
+const BlogCard = ({ data, className = '' }) => {
     const imageURL = data?.thumbnail_id?.[0]?.url 
     return (
-        <Link href={`/blog/${data?.slug}`} className='w-[280px] h-[375px] bg-[#F8F8F8] rounded-2xl overflow-hidden flex flex-col p-5 relative'>
-            <Image src={ imageURL ? mediaUrl(imageURL) : '/blog1.png'} width={240} height={140} alt='blog1' className='w-full h-[170px] object-cover rounded-2xl' />
+        <Link href={`/blog/${data?.slug}`} className={`w-[260px] sm:w-[280px] h-[375px] bg-[#F8F8F8] rounded-2xl overflow-hidden flex flex-col p-5 relative ${className}`}>
+            <Image src={ imageURL ? mediaUrl(imageURL) : '/blog1.png'} width={240} height={140} alt={data?.title || 'بلاگ'} className='w-full h-[170px] object-cover rounded-2xl' />
             <p className='flex line-clamp-2 items-start  mt-3 text-base font-semibold'>
                 <IoMdArrowDropleft fontSize={22} color='#B7B7B7' />
                 {

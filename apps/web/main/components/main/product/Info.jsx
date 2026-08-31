@@ -3,6 +3,7 @@ import Link from 'next/link';
 import React from 'react';
 import { FaStar } from 'react-icons/fa';
 import { mediaUrl } from '../../../lib/data/stubs';
+import { productCategoryHref } from '../../../utils/paths';
 
 const FeatureItem = ({title , value}) => {
     return (
@@ -12,37 +13,33 @@ const FeatureItem = ({title , value}) => {
         </div>
     );
 }
-const unitRegister = {l:'لیتر',g:'گرم',ml:'میلی بیتر' ,kg:'کیلوگرم'}
+const unitRegister = {l:'لیتر',g:'گرم',ml:'میلی لیتر' ,kg:'کیلوگرم'}
 const Info = ({slug , data ,specification}) => {
-    const spec = specification?.filter(item=>(item?.highlight && item?.specification_id?.position === 'attribute' )) || []
-    const package_ids = data?.package_ids || []
-    const path_titles=  data.category_id[0].path_titles || []
-    const path_slugs=  data.category_id[0].path_slugs || []
+    const spec = (Array.isArray(specification) ? specification : []).filter((item) => (
+        item?.highlight && item?.specification_id?.position === 'attribute'
+    ))
+    const package_ids = Array.isArray(data?.package_ids) ? data.package_ids : []
+    const categories = Array.isArray(data?.category_id) ? data.category_id : []
 
-
-    
-
-   
-    console.log(path_titles);
-    
-    
-    
     return (
         <div className='bg-[#F0F0F0]  rounded-3xl grid  lg:flex justify-between flex-col lg:flex-row gap-5'>
         <div className='p-5'>
         <div className='text-sm text-gray-600 mb-2'>
-            <Link href={'/'} className='cursor-pointer hover:underline'>خانه</Link> / <Link href={'/products'} className='cursor-pointer hover:underline'>کود‌های خانگی</Link> /  
-
+            <Link href={'/'} className='cursor-pointer hover:underline'>خانه</Link> / <Link href={'/products'} className='cursor-pointer hover:underline'>محصولات</Link>
                   {
-                    path_titles.map((item,i)=>{
-                        return <Link  key={i} className='me-2 cursor-pointer hover:underline' href={`/products/${path_slugs[i]}?sort=newest`}>
-                            
-                        {item}
-                        {path_titles.length === i+1 ? '':<span className='mr-1'>/</span>}
-                        </Link>
+                    categories.map((item,i)=>{
+                        if (!item?.slug && !item?.title) return null;
+                        return (
+                          <span key={item._id || item.slug || i}>
+                            {' / '}
+                            <Link className='cursor-pointer hover:underline' href={`${productCategoryHref(item.slug)}?sort=newest`}>
+                              {item.title}
+                            </Link>
+                          </span>
+                        )
                     })
-                  } /
-                  <span className='me-2'>{data.title}</span>
+                  }
+                  {data?.title ? <> / <span>{data.title}</span></> : null}
                     </div>
         <div className='flex items-center mb-3 gap-1'>
             <FaStar className='inline text-yellow-400 me-1'/>
@@ -54,38 +51,40 @@ const Info = ({slug , data ,specification}) => {
         <p className='my-2 text-justify line-clamp-3 text-gray-700'>
             {data.subTitle}
         </p>
+        {package_ids.length ? (
         <div>
             <p className='font-extrabold md:text-lg col-span-full'>بسته‌بندی:</p>
         <div className='flex flex-wrap mt-2 gap-3'>
             {
                 package_ids.map(item=>{
                     return(                        
-                        <div key={item._id} className='bg-white p-3 rounded-lg flex  gap-1'>
+                        <div key={item._id || item.id} className='bg-white p-3 rounded-lg flex  gap-1'>
                         <p className='text-[#1A1A1A]'>{item.value}</p>
                         
-                        <p>{unitRegister[item.unit]}</p>
+                        <p>{unitRegister[item.unit] || item.unit}</p>
                      </div>
                     )
                 })
             }
         </div>
         </div>
+        ) : null}
+        {spec.length ? (
         <div>
             <p className='font-extrabold md:text-lg mt-2 col-span-full'>ویژگی‌ها:</p>
         <div className='flex flex-wrap mt-2 gap-3'>
             {
                 spec.map(item=>{
-                    
-                    
                     return(                        
-                        <FeatureItem key={item._id} title={item?.specification_id?.title || ''} value={item.value}/>
+                        <FeatureItem key={item._id || item.id} title={item?.specification_id?.title || ''} value={item.value}/>
                     )
                 })
             }
         </div>
         </div>
+        ) : null}
         </div>
-        <Image src={data?.thumbnail_id?.[0].url ? mediaUrl(data?.thumbnail_id?.[0].url)  :  '/pg.png'} width={400} height={300} alt={slug} className='w-full md:w-[500px] h-[400px] row-start-1 object-cover rounded-3xl '/>
+        <Image src={data?.thumbnail_id?.[0]?.url ? mediaUrl(data?.thumbnail_id?.[0]?.url)  :  '/pg.png'} width={400} height={300} alt={slug} className='w-full md:w-[500px] h-[400px] row-start-1 object-cover rounded-3xl '/>
         </div>
     );
 };

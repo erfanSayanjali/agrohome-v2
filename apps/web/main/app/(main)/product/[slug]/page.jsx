@@ -1,49 +1,56 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import ProductPage from '../../../../pages/ProductPage.jsx';
-import { notFound } from 'next/navigation.js';
+import { notFound, redirect } from 'next/navigation.js';
 import {
   getProductBySlug,
+  getProductCategoryBySlug,
   getProductSeo,
-  getProductSpecifications,
   getSimilarProducts,
 } from '../../../../lib/data/stubs';
-
-const getProduct = async (slug) => getProductBySlug(slug);
+import { decodePathSegment } from '../../../../utils/paths';
 
 const Product = async ({ params }) => {
-  const { slug } = await params;
-  const product = await getProduct(slug);
-  if (!product.content?.[0]) return notFound();
+  const { slug: rawSlug } = await params;
+  const slug = decodePathSegment(rawSlug);
+  const product = await getProductBySlug(slug);
+  if (!product.content?.[0]) {
+    const category = await getProductCategoryBySlug(slug);
+    if (category.content?.slug) {
+      redirect(`/products/${encodeURIComponent(category.content.slug)}`);
+    }
+    return notFound();
+  }
 
-  const [specification, similarProducts] = await Promise.all([
-    getProductSpecifications(product.content[0]._id),
-    getSimilarProducts(product.content?.[0].category_id?.[0]?.slug),
-  ]);
+  const item = product.content[0];
+  const similarProducts = await getSimilarProducts(item.category_id?.[0]?.slug);
 
   return (
-    <ProductPage
-      similarProducts={similarProducts.content}
-      specification={specification.content}
-      data={product.content[0]}
-      slug={decodeURIComponent(slug).split('-').join(' ')}
-    />
+    <Suspense fallback={<div></div>}>
+      <ProductPage
+        similarProducts={similarProducts.content}
+        specification={item.specs || []}
+        data={item}
+        slug={item.title || slug}
+      />
+    </Suspense>
   );
 };
 
 export default Product;
 
 export async function generateMetadata({ params }) {
-  const { slug } = await params;
-  const product = await getProduct(slug);
+  const { slug: rawSlug } = await params;
+  const slug = decodePathSegment(rawSlug);
+  const product = await getProductBySlug(slug);
   if (!product.content?.[0]) return {};
 
-  const productSeo = await getProductSeo(product.content[0]._id);
+  const productSeo = await getProductSeo(product.content[0]._id || product.content[0].id);
   const item = productSeo?.content;
   const title = item?.metaTitle || product.content[0].title || '';
 
   return {
     title,
-    description: item?.metaDescription || product.content[0].shortDescription || '',
+    description: item?.metaDescription || product.content[0].subTitle || product.content[0].shortDescription || '',
     keywords: item?.metaKeyWords?.join(', ') || '',
     alternates: {
       canonical: item?.canonicalUrl || `/product/${slug}`,

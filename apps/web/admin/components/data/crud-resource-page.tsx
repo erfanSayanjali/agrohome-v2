@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ImageIcon, Plus, Pencil, Trash2, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
+import { ImageIcon, Plus, Pencil, Trash2, ChevronsDownUp, ChevronsUpDown, FolderPlus } from "lucide-react";
+import { IconActionButton } from "@/components/ui/icon-action-button";
 import { apiDelete, apiPost, apiPut, ApiError } from "@/lib/api";
 import { useResourceList } from "@/lib/use-resource-list";
 import { useNestedResourceList } from "@/lib/use-nested-resource-list";
@@ -24,7 +25,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
-import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -48,6 +48,7 @@ import {
   type SeoTargetType,
 } from "@/lib/seo";
 import { cn } from "@/lib/utils";
+import { FormField } from "@/components/ui/form-field";
 
 export type FieldType =
   | "text"
@@ -125,13 +126,31 @@ type CrudResourcePageProps<T extends { id: string }> = {
   nested?: NestedConfig;
 };
 
-function resolveColSpan(field: FormField): 1 | 2 | "full" {
+function baseColSpan(field: FormField): 1 | 2 | "full" {
   if (field.colSpan) return field.colSpan;
   const type = field.type || "text";
-  if (type === "textarea" || type === "richtext" || type === "media" || type === "async-select")
-    return "full";
-  if (type === "switch") return 1;
+  if (type === "textarea" || type === "richtext" || type === "media") return "full";
   return 1;
+}
+
+/** فیلد تک‌ستونهٔ تنها در یک ردیف را تمام‌عرض می‌کند تا جای خالی نماند. */
+function packFieldSpans(fields: FormField[]): Array<1 | 2 | "full"> {
+  const spans = fields.map(baseColSpan);
+  let pending = 0;
+  for (let i = 0; i < spans.length; i++) {
+    const takesFull = spans[i] === "full" || spans[i] === 2;
+    if (takesFull) {
+      if (pending === 1 && !fields[i - 1]?.colSpan) spans[i - 1] = "full";
+      pending = 0;
+      continue;
+    }
+    pending += 1;
+    if (pending === 2) pending = 0;
+  }
+  if (pending === 1 && fields.length && !fields[fields.length - 1]?.colSpan) {
+    spans[spans.length - 1] = "full";
+  }
+  return spans;
 }
 
 function isFieldRequired(field: FormField) {
@@ -275,11 +294,10 @@ function FieldControl({
     return (
       <div
         dir="rtl"
-        className="space-y-3 rounded-[var(--admin-radius)] border border-[var(--admin-border)] bg-[var(--admin-bg-elevated)]/50 p-3"
+        className="space-y-3 rounded-[var(--admin-radius)] border border-[var(--admin-border)] bg-[var(--admin-bg-elevated)] p-3"
       >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <div className="min-w-0 flex-1 space-y-2">
-            <Label>آدرس رسانه</Label>
+          <FormField label="آدرس رسانه" className="min-w-0 flex-1">
             <Input
               value={url}
               onChange={(e) => {
@@ -289,14 +307,13 @@ function FieldControl({
               placeholder={field.placeholder || "URL یا از کتابخانه انتخاب کنید"}
               dir="ltr"
             />
-          </div>
+          </FormField>
           <Button type="button" variant="secondary" onClick={() => setPickerOpen(true)}>
             <ImageIcon className="h-4 w-4" />
             انتخاب از رسانه
           </Button>
         </div>
-        <div className="space-y-2">
-          <Label>متن جایگزین (alt)</Label>
+        <FormField label="متن جایگزین (alt)">
           <Input
             value={media?.alt || ""}
             onChange={(e) => {
@@ -306,7 +323,7 @@ function FieldControl({
             placeholder="توصیف تصویر"
             disabled={!url}
           />
-        </div>
+        </FormField>
         {url ? (
           <div className="overflow-hidden rounded-lg border border-[var(--admin-border)] bg-black/20">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -350,10 +367,11 @@ function FormFieldsGrid({
   seoTarget?: SeoTargetConfig;
   setSeo?: React.Dispatch<React.SetStateAction<SeoFormValues>>;
 }) {
+  const spans = packFieldSpans(fields);
   return (
     <div className="grid grid-cols-1 gap-4 py-1 sm:grid-cols-2">
-      {fields.map((field) => {
-        const span = resolveColSpan(field);
+      {fields.map((field, index) => {
+        const span = spans[index];
         const labelKey = field.asyncSelect?.labelKey || `${field.name}Label`;
         let excludeValues: string[] | undefined;
         if (field.asyncSelect?.excludeSelfTree && currentId) {
@@ -364,22 +382,16 @@ function FormFieldsGrid({
           }
         }
         return (
-          <div
+          <FormField
             key={field.name}
+            htmlFor={field.name}
+            label={field.label}
+            required={isFieldRequired(field)}
             className={cn(
-              "space-y-2",
               span === "full" && "sm:col-span-2",
               span === 2 && "sm:col-span-2"
             )}
           >
-            <Label htmlFor={field.name} className="flex items-center gap-1">
-              <span>{field.label}</span>
-              {isFieldRequired(field) ? (
-                <span className="text-[var(--admin-danger)]" aria-hidden>
-                  *
-                </span>
-              ) : null}
-            </Label>
             <FieldControl
               field={field}
               value={values[field.name]}
@@ -405,7 +417,7 @@ function FormFieldsGrid({
                 });
               }}
             />
-          </div>
+          </FormField>
         );
       })}
     </div>
@@ -437,12 +449,16 @@ export function CrudResourcePage<T extends { id: string }>({
     isNested ? "" : path,
     sortable && !isNested ? { sort: "sortOrder" } : undefined
   );
-  const nestedList = useNestedResourceList<T>(nested?.nestedPath, { enabled: isNested });
+  const nestedList = useNestedResourceList<T>(nested?.nestedPath, {
+    enabled: isNested,
+    state: flatList.state,
+    setQuery: flatList.setQuery,
+  });
 
   const list = isNested
     ? {
-        state: nestedList.state,
-        setQuery: nestedList.setQuery,
+        state: flatList.state,
+        setQuery: flatList.setQuery,
         rows: nestedList.rows as T[],
         total: nestedList.total,
         meta: nestedList.meta,
@@ -507,10 +523,16 @@ export function CrudResourcePage<T extends { id: string }>({
     return next;
   }
 
-  function openCreate() {
+  function openCreate(parent?: { parentId: string; parentLabel?: string }) {
     setMode("create");
     setCurrent(null);
-    const defaults = { ...(createDefaults || {}) };
+    const defaults: Record<string, unknown> = { ...(createDefaults || {}) };
+    if (parent?.parentId) {
+      defaults.parentId = parent.parentId;
+      const parentField = normalizedFields.find((f) => f.name === "parentId");
+      const labelKey = parentField?.asyncSelect?.labelKey || "parentIdLabel";
+      defaults[labelKey] = parent.parentLabel || "";
+    }
     setValues(defaults);
     setSeo(emptySeoForm({ targetPath: resolveTargetPath(defaults) }));
     setFormTab("info");
@@ -537,22 +559,29 @@ export function CrudResourcePage<T extends { id: string }>({
     filter: false,
     cell: (row) => (
       <div className="inline-flex flex-nowrap items-center gap-0.5">
+        {isNested && !disableCreate ? (
+          <IconActionButton
+            tooltip="افزودن زیردسته"
+            onClick={() =>
+              openCreate({
+                parentId: row.id,
+                parentLabel: String((row as { title?: unknown }).title ?? ""),
+              })
+            }
+          >
+            <FolderPlus className="h-4 w-4" />
+          </IconActionButton>
+        ) : null}
         {extraActions?.(row, list.reload)}
         {!disableEdit ? (
-          <Button type="button" size="icon" variant="ghost" onClick={() => openEdit(row)} aria-label="ویرایش">
+          <IconActionButton tooltip="ویرایش" onClick={() => openEdit(row)}>
             <Pencil className="h-4 w-4" />
-          </Button>
+          </IconActionButton>
         ) : null}
         {!disableDelete ? (
-          <Button
-            type="button"
-            size="icon"
-            variant="ghost"
-            onClick={() => setDeleteId(row.id)}
-            aria-label="حذف"
-          >
+          <IconActionButton tooltip="حذف" onClick={() => setDeleteId(row.id)}>
             <Trash2 className="h-4 w-4 text-[var(--admin-danger)]" />
-          </Button>
+          </IconActionButton>
         ) : null}
       </div>
     ),
@@ -612,7 +641,7 @@ export function CrudResourcePage<T extends { id: string }>({
               </>
             ) : null}
             {!disableCreate ? (
-              <Button type="button" onClick={openCreate}>
+              <Button type="button" onClick={() => openCreate()}>
                 <Plus className="h-4 w-4" />
                 مورد جدید
               </Button>

@@ -96,15 +96,33 @@ async function main() {
     })
   );
 
-  await json(
-    await fetch(`${base}/api/v1/admin/pages/${pageId}/publish`, {
-      method: "POST",
-      headers: { Cookie: cookieHeader },
-    })
-  );
-
   const publicPage = await json(await fetch(`${base}/api/v1/pages/%2F`));
   console.log("public page snapshot blocks", publicPage.content?.snapshot?.blocks?.length);
+
+  const filterOverride = await fetch(
+    `${base}/api/v1/products?filters=${encodeURIComponent(JSON.stringify({ status: "UNAVAILABLE" }))}`
+  );
+  const filterBody = await filterOverride.json();
+  const statuses = (filterBody.content as Array<{ status?: string }> | undefined)?.map(
+    (item) => item.status
+  );
+  if (statuses?.some((status) => status !== "AVAILABLE")) {
+    throw new Error("public product filter override still exposes non-AVAILABLE items");
+  }
+  console.log("filter override guard ok");
+
+  const checkPhone = await json(
+    await fetch(`${base}/api/v1/auth/check-phone`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone }),
+    })
+  );
+  if ("exists" in checkPhone.content) {
+    throw new Error("check-phone still exposes user enumeration");
+  }
+  console.log("check-phone enumeration guard ok");
+
   console.log("SMOKE OK");
 }
 

@@ -9,10 +9,11 @@
   },
   "dependencies": {
     "@agrohome/shared": "workspace:*",
-    "@mui/material": "^7.3.5",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@mui/material": "^7.3.5",
     "framer-motion": "^12.23.3",
+    "isomorphic-dompurify": "^3.23.0",
     "next": "^15.3.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

@@ -2,8 +2,12 @@ import type { FastifyInstance } from "fastify";
 import { registerAdminCrud } from "../../lib/crud";
 import { ok, slugify } from "../../lib/helpers";
 import { Fa } from "../../lib/errors";
-import { requireAdmin, requirePermission } from "../../plugins/auth";
+import { requirePermission } from "../../plugins/auth";
 import { normalizeMedia } from "../../lib/media";
+import {
+  revalidateBlogEntityPages,
+  revalidateCommentEntityPages,
+} from "../../lib/cms-revalidate";
 
 function pick(body: Record<string, unknown>, keys: string[]) {
   const out: Record<string, unknown> = {};
@@ -49,7 +53,7 @@ export async function adminBlogRoutes(app: FastifyInstance) {
 
   app.get(
     "/admin/blog-categories-nested",
-    { preHandler: [requireAdmin] },
+    { preHandler: [requirePermission("blog_category", "read")] },
     async () => {
       const all = await app.prisma.blogCategory.findMany({
         orderBy: { title: "asc" },
@@ -98,6 +102,15 @@ export async function adminBlogRoutes(app: FastifyInstance) {
       }
       return data;
     },
+    afterCreate: async (instance) => {
+      await revalidateBlogEntityPages(instance);
+    },
+    afterUpdate: async (instance) => {
+      await revalidateBlogEntityPages(instance);
+    },
+    afterDelete: async (instance) => {
+      await revalidateBlogEntityPages(instance);
+    },
   });
 
   registerAdminCrud(app, "comments", "comment", {
@@ -111,6 +124,7 @@ export async function adminBlogRoutes(app: FastifyInstance) {
       website: b.website,
       rating: b.rating,
       publish: b.publish ?? false,
+      showOnHome: b.showOnHome ?? false,
       targetType: b.targetType,
       productId: b.productId ?? null,
       blogId: b.blogId ?? null,
@@ -124,12 +138,58 @@ export async function adminBlogRoutes(app: FastifyInstance) {
         "website",
         "rating",
         "publish",
+        "showOnHome",
         "targetType",
         "productId",
         "blogId",
         "parentId",
       ]),
+    beforeDelete: async (instance, id) => {
+      const children = await instance.prisma.comment.count({
+        where: { parentId: id },
+      });
+      if (children > 0) {
+        throw new Error(Fa.commentHasReplies);
+      }
+    },
+    afterCreate: async (instance) => {
+      await revalidateCommentEntityPages(instance);
+    },
+    afterUpdate: async (instance) => {
+      await revalidateCommentEntityPages(instance);
+    },
+    afterDelete: async (instance) => {
+      await revalidateCommentEntityPages(instance);
+    },
   });
+
+  app.get(
+    "/admin/comments-nested",
+    { preHandler: [requirePermission("comment", "read")] },
+    async () => {
+      const all = await app.prisma.comment.findMany({
+        orderBy: { createdAt: "desc" },
+        include: {
+          product: { select: { id: true, title: true } },
+          blog: { select: { id: true, title: true } },
+        },
+      });
+      type Node = (typeof all)[number] & { children: Node[] };
+      const map = new Map<string, Node>();
+      all.forEach((c) => map.set(c.id, { ...c, children: [] }));
+      const roots: Node[] = [];
+      for (const c of map.values()) {
+        if (c.parentId && map.has(c.parentId)) map.get(c.parentId)!.children.push(c);
+        else roots.push(c);
+      }
+      const byCreatedAsc = (a: Node, b: Node) =>
+        a.createdAt.getTime() - b.createdAt.getTime();
+      for (const node of map.values()) {
+        node.children.sort(byCreatedAsc);
+      }
+      return ok(roots);
+    }
+  );
 
   app.post(
     "/admin/comments/:id/reply",
@@ -154,6 +214,7 @@ export async function adminBlogRoutes(app: FastifyInstance) {
           blogId: parent.blogId,
         },
       });
+      await revalidateCommentEntityPages(app);
       return ok(replyComment);
     }
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Label } from "@/components/ui/label";
+import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,7 @@ export type EntityQueryDraft = {
   parentSlug: string;
   categoryId: string;
   isFeatured: boolean;
+  showOnHome: boolean;
   targetType: string;
   variant: string;
 };
@@ -50,6 +51,10 @@ export function payloadToQueryDraft(
     parentSlug: String(payload.parentSlug || ""),
     categoryId: String(payload.categoryId || ""),
     isFeatured: Boolean(payload.isFeatured),
+    showOnHome:
+      payload.showOnHome !== undefined
+        ? Boolean(payload.showOnHome)
+        : entity === "comment",
     targetType: String(payload.targetType || "product"),
     variant: String(payload.variant || "slider"),
   };
@@ -73,6 +78,7 @@ export function queryDraftToPayload(
   delete next.parentSlug;
   delete next.categoryId;
   delete next.isFeatured;
+  delete next.showOnHome;
   delete next.targetType;
   delete next.filters;
 
@@ -89,6 +95,9 @@ export function queryDraftToPayload(
   }
   if (draft.entity === "product" && draft.isFeatured) {
     next.isFeatured = true;
+  }
+  if (draft.entity === "comment") {
+    next.showOnHome = Boolean(draft.showOnHome);
   }
   if (draft.entity === "comment" && draft.targetType && draft.targetType !== "all") {
     next.targetType = draft.targetType;
@@ -129,8 +138,7 @@ export function EntityQueryEditor({ value, onChange }: EntityQueryEditorProps) {
     <div className="space-y-4 rounded-[var(--admin-radius-sm)] border border-[var(--admin-border)] bg-[var(--admin-bg)]/30 p-3">
       <p className="text-xs font-semibold text-[var(--admin-muted)]">منبع داده اسلایدر</p>
 
-      <div className="space-y-2">
-        <Label>نوع محتوا</Label>
+      <FormField label="نوع محتوا">
         <Select
           value={value.entity}
           onValueChange={(v) => {
@@ -140,6 +148,7 @@ export function EntityQueryEditor({ value, onChange }: EntityQueryEditorProps) {
               categoryId: "",
               parentSlug: entity === "blog_category" ? value.parentSlug || "tutorials" : "",
               isFeatured: false,
+              showOnHome: entity === "comment",
               targetType: entity === "comment" ? "product" : "all",
               showAllHref:
                 entity === "product" ? "/products" : entity === "blog" ? "/blogs" : "",
@@ -163,11 +172,10 @@ export function EntityQueryEditor({ value, onChange }: EntityQueryEditorProps) {
             ))}
           </SelectContent>
         </Select>
-      </div>
+      </FormField>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-2">
-          <Label>تعداد آیتم</Label>
+        <FormField label="تعداد آیتم">
           <Input
             type="number"
             min={1}
@@ -178,9 +186,8 @@ export function EntityQueryEditor({ value, onChange }: EntityQueryEditorProps) {
             }
             dir="ltr"
           />
-        </div>
-        <div className="space-y-2">
-          <Label>مرتب‌سازی</Label>
+        </FormField>
+        <FormField label="مرتب‌سازی">
           <Select value={value.sort} onValueChange={(v) => patch({ sort: v })}>
             <SelectTrigger>
               <SelectValue />
@@ -193,47 +200,52 @@ export function EntityQueryEditor({ value, onChange }: EntityQueryEditorProps) {
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </FormField>
       </div>
 
-      <div className="space-y-2">
-        <Label>عنوان بخش</Label>
+      <FormField label="عنوان بخش">
         <Input value={value.title} onChange={(e) => patch({ title: e.target.value })} />
-      </div>
-      <div className="space-y-2">
-        <Label>خط بالای عنوان</Label>
+      </FormField>
+      <FormField label="خط بالای عنوان">
         <Input value={value.eyebrow} onChange={(e) => patch({ eyebrow: e.target.value })} />
-      </div>
-      <div className="space-y-2">
-        <Label>لینک «مشاهده همه»</Label>
+      </FormField>
+      <FormField label="لینک «مشاهده همه»">
         <Input
           value={value.showAllHref}
           onChange={(e) => patch({ showAllHref: e.target.value })}
           dir="ltr"
           placeholder="/products"
         />
-      </div>
+      </FormField>
 
       {value.entity === "product" ? (
-        <div className="flex items-center justify-between gap-3 rounded-[var(--admin-radius-sm)] border border-[var(--admin-border)] px-3 py-2">
-          <Label htmlFor="featured-only">فقط محصولات ویژه</Label>
-          <Switch
-            id="featured-only"
-            checked={value.isFeatured}
-            onCheckedChange={(v) => patch({ isFeatured: v })}
-          />
-        </div>
+        <FormField label="فقط محصولات ویژه" htmlFor="featured-only">
+          <div
+            dir="rtl"
+            className="flex h-10 items-center justify-between gap-3 rounded-[var(--admin-radius-sm)] border border-[var(--admin-border)] bg-[var(--admin-bg-elevated)] px-3"
+          >
+            <span className="text-sm text-[var(--admin-muted)]">
+              {value.isFeatured ? "فعال" : "غیرفعال"}
+            </span>
+            <Switch
+              id="featured-only"
+              checked={value.isFeatured}
+              onCheckedChange={(v) => patch({ isFeatured: v })}
+            />
+          </div>
+        </FormField>
       ) : null}
 
       {categoryPath ? (
-        <div className="space-y-2">
-          <Label>
-            {value.entity === "blog"
+        <FormField
+          label={
+            value.entity === "blog"
               ? "فیلتر دسته وبلاگ"
               : value.entity === "product_category"
                 ? "دسته والد"
-                : "فیلتر دسته محصول"}
-          </Label>
+                : "فیلتر دسته محصول"
+          }
+        >
           <AsyncSelect
             path={categoryPath}
             value={value.categoryId || undefined}
@@ -260,41 +272,56 @@ export function EntityQueryEditor({ value, onChange }: EntityQueryEditorProps) {
               پاک کردن فیلتر دسته
             </Button>
           ) : null}
-        </div>
+        </FormField>
       ) : null}
 
       {value.entity === "blog_category" ? (
-        <div className="space-y-2">
-          <Label>اسلاگ دسته والد</Label>
+        <FormField
+          label="اسلاگ دسته والد"
+          hint="مثلاً tutorials برای بخش آموزش‌های خانه"
+        >
           <Input
             value={value.parentSlug}
             onChange={(e) => patch({ parentSlug: e.target.value })}
             dir="ltr"
             placeholder="tutorials"
           />
-          <p className="text-[11px] text-[var(--admin-muted)]">
-            مثلاً tutorials برای بخش آموزش‌های خانه
-          </p>
-        </div>
+        </FormField>
       ) : null}
 
       {value.entity === "comment" ? (
-        <div className="space-y-2">
-          <Label>نوع هدف نظر</Label>
-          <Select
-            value={value.targetType || "all"}
-            onValueChange={(v) => patch({ targetType: v })}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="product">محصول</SelectItem>
-              <SelectItem value="blog">وبلاگ</SelectItem>
-              <SelectItem value="all">همه</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <>
+          <FormField label="فقط نظرات صفحه اصلی" htmlFor="show-on-home-only">
+            <div
+              dir="rtl"
+              className="flex h-10 items-center justify-between gap-3 rounded-[var(--admin-radius-sm)] border border-[var(--admin-border)] bg-[var(--admin-bg-elevated)] px-3"
+            >
+              <span className="text-sm text-[var(--admin-muted)]">
+                {value.showOnHome ? "فعال" : "غیرفعال"}
+              </span>
+              <Switch
+                id="show-on-home-only"
+                checked={value.showOnHome}
+                onCheckedChange={(v) => patch({ showOnHome: v })}
+              />
+            </div>
+          </FormField>
+          <FormField label="نوع هدف نظر">
+            <Select
+              value={value.targetType || "all"}
+              onValueChange={(v) => patch({ targetType: v })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="product">محصول</SelectItem>
+                <SelectItem value="blog">وبلاگ</SelectItem>
+                <SelectItem value="all">همه</SelectItem>
+              </SelectContent>
+            </Select>
+          </FormField>
+        </>
       ) : null}
     </div>
   );

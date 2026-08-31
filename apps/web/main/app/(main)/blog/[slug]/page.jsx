@@ -5,32 +5,41 @@ import {
   getBlogSuggestions,
 } from '../../../../lib/data/stubs';
 import { notFound } from 'next/navigation';
+import { decodePathSegment } from '../../../../utils/paths';
 
 const getBlog = async (slug) => getBlogBySlug(slug);
 
 async function page({ params }) {
-  const { slug } = await params;
+  const { slug: rawSlug } = await params;
+  const slug = decodePathSegment(rawSlug);
   const blog = await getBlog(slug);
   if (!blog.content) return notFound();
 
-  const Suggestions = await getBlogSuggestions(blog.content.category_id?._id);
+  const blogId = blog.content._id || blog.content.id;
+  const categoryId =
+    blog.content.categoryId ||
+    blog.content.category_id?._id ||
+    blog.content.category?.id;
+  const suggestions = await getBlogSuggestions(categoryId, blogId);
 
-  return <BlogPage blog={blog.content} Suggestions={Suggestions.content} />;
+  return <BlogPage blog={blog.content} Suggestions={suggestions.content || []} />;
 }
 
 export default page;
 
 export async function generateMetadata({ params }) {
-  const { slug } = await params;
+  const { slug: rawSlug } = await params;
+  const slug = decodePathSegment(rawSlug);
   const blog = await getBlog(slug);
   if (!blog.content) return {};
 
-  const blogSeo = await getBlogSeo(blog.content._id);
+  const blogId = blog.content._id || blog.content.id;
+  const blogSeo = await getBlogSeo(blogId);
   const item = blogSeo?.content;
 
   return {
     title: item?.metaTitle || blog.content.title || '',
-    description: item?.metaDescription || '',
+    description: item?.metaDescription || blog.content.subTitle || '',
     keywords: item?.metaKeyWords?.join(', ') || '',
     alternates: {
       canonical: item?.canonicalUrl || `/blog/${slug}`,

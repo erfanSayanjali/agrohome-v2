@@ -120,6 +120,12 @@ body {
   fill: var(--admin-accent) !important;
 }
 
+.admin-tinymce .tox-edit-area,
+.admin-tinymce .tox-edit-area__iframe,
+.admin-tinymce .tox-sidebar-wrap {
+  background: var(--admin-bg-elevated) !important;
+}
+
 .admin-tinymce .tox .tox-edit-area::before {
   border-radius: 0;
 }

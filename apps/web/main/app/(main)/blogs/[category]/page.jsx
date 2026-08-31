@@ -1,15 +1,18 @@
 import React, { Suspense } from 'react';
 import BlogsPage from '../../../../pages/BlogsPage.jsx';
+import BlogsPageLoading from '../../../../components/main/blog/BlogsPageLoading';
 import { notFound } from 'next/navigation';
+import { decodePathSegment } from '../../../../utils/paths';
 import {
   getBlogCategoryBySlug,
   getBlogCategorySeo,
   getPublishedBlogCategories,
 } from '../../../../lib/data/stubs';
+import { nestCategories } from '../../../../utils/categories';
 
 const Page = async ({ params }) => {
   const resolved = await params;
-  const slug = resolved.category;
+  const slug = decodePathSegment(resolved.category);
 
   const [categoriesRes, currentCategoryRes] = await Promise.all([
     getPublishedBlogCategories(),
@@ -18,12 +21,10 @@ const Page = async ({ params }) => {
 
   if (!currentCategoryRes?.content) notFound();
 
-  const parentCategories = (categoriesRes.content || []).filter(
-    (item) => item?.parent_id
-  );
+  const parentCategories = nestCategories(categoriesRes.content || []);
 
   return (
-    <Suspense fallback={<div></div>}>
+    <Suspense fallback={<BlogsPageLoading />}>
       <BlogsPage
         currentCategory={currentCategoryRes.content}
         parentCategories={parentCategories}
@@ -36,11 +37,13 @@ export default Page;
 
 export async function generateMetadata({ params }) {
   const resolved = await params;
-  const slug = resolved.category;
+  const slug = decodePathSegment(resolved.category);
   const categoryRes = await getBlogCategoryBySlug(slug);
   if (!categoryRes?.content) return {};
 
-  const seoRes = await getBlogCategorySeo(categoryRes.content._id);
+  const seoRes = await getBlogCategorySeo(
+    categoryRes.content._id || categoryRes.content.id
+  );
   const item = seoRes?.content;
 
   return {

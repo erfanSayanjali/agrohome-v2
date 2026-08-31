@@ -1,15 +1,14 @@
 import BlogsPage from '../../../pages/BlogsPage.jsx';
 import { getPublishedBlogCategories, getSeoByPath } from '../../../lib/data/stubs';
+import { nestCategories } from '../../../utils/categories';
 import { Suspense } from 'react';
 
 const page = async () => {
   const blog_category = await getPublishedBlogCategories();
-  const parentCategories = (blog_category.content || []).filter(
-    (item) => item?.parent_id
-  );
+  const parentCategories = nestCategories(blog_category.content || []);
 
   return (
-    <Suspense fallback={<div></div>}>
+    <Suspense fallback={null}>
       <BlogsPage parentCategories={parentCategories} />
     </Suspense>
   );

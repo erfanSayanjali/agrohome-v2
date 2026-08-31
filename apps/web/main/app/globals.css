@@ -2,7 +2,13 @@
 
 html{
   scroll-behavior: smooth;
-  /* overflow-x:hidden !important; */
+  overflow-x: clip;
+  max-width: 100%;
+}
+
+body {
+  overflow-x: clip;
+  max-width: 100%;
 }
 
 
@@ -112,13 +118,19 @@ pre {
   text-shadow: -1px -1px 0 #333, 1px -1px 0 #333, -1px 1px 0 #333, 1px 1px 0 #333;
 }
 
+.editor,
+.productDesc {
+  font-family: inherit;
+}
+
 .editor strong,
 .productDesc strong {
-  font-family: IRANSansBold !important;
+  font-family: inherit !important;
+  font-weight: 800;
 }
 
 .editor * {
-  font-family: IRANSans !important;
+  font-family: inherit !important;
 }
 
 .editor *,
@@ -330,6 +342,8 @@ pre {
 .slider-default{
   height: auto !important;
   padding-bottom: 28px !important;
+  max-width: 100%;
+  overflow: hidden;
 }
 .slider-default .swiper-pagination {
   bottom: 0 !important;
@@ -398,4 +412,13 @@ pre {
 
 .animate-menuFadeOut {
   animation: menuFadeOut .28s ease forwards;
+}
+
+@keyframes empty-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+
+.empty-float {
+  animation: empty-float 3.2s ease-in-out infinite;
 }

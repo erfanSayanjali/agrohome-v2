@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile=false
+
+      - name: Typecheck shared and API
+        run: pnpm typecheck
+
+      - name: Unit tests (API)
+        run: pnpm test
+
+      - name: Dependency audit
+        run: pnpm audit:deps
+        continue-on-error: true
+
+      - name: Build web apps
+        run: pnpm build:main && pnpm build:admin

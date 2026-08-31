@@ -6,10 +6,13 @@ import React from 'react';
 import Skeleton from '@mui/material/Skeleton';
 import { mediaUrl } from '../../../lib/data/stubs';
 
-const ProductCard = ({ title, category, image, slug, loading = false }) => {
+const shellClass = (fullWidth) =>
+    `${fullWidth ? 'w-full' : 'w-[148px] sm:w-[180px] md:w-[220px]'} p-2.5 md:p-3 flex flex-col bg-white rounded-xl md:rounded-2xl border-2 border-[#E8E8E8]`;
+
+const ProductCard = ({ title, category, image, slug, loading = false, fullWidth = false }) => {
     if (loading) {
         return (
-            <div className='w-[148px] sm:w-[180px] md:w-[230px] p-2.5 md:p-3 flex flex-col bg-white rounded-xl md:rounded-2xl border-2 border-[#E8E8E8]'>
+            <div className={shellClass(fullWidth)}>
                 <div className='w-full aspect-[4/3] md:aspect-[230/170] rounded-lg overflow-hidden'>
                     <Skeleton variant="rectangular" width="100%" height="100%" className="h-full!" />
                 </div>
@@ -32,7 +35,7 @@ const ProductCard = ({ title, category, image, slug, loading = false }) => {
     return (
         <Link
             href={'/product/' + (slug || title)}
-            className='w-[148px] sm:w-[180px] md:w-[230px] p-2.5 md:p-3 group flex bg-white transition-all duration-700 flex-col rounded-xl md:rounded-2xl border-2 border-[#E8E8E8]'
+            className={`${shellClass(fullWidth)} group transition-all duration-500 hover:border-[#308060]/35 hover:shadow-[0_8px_24px_rgba(26,61,57,0.08)]`}
         >
             <div className='relative w-full aspect-[4/3] md:aspect-[230/170] overflow-hidden rounded-lg bg-[#F8F8F8]'>
                 <Image
@@ -44,7 +47,7 @@ const ProductCard = ({ title, category, image, slug, loading = false }) => {
                 />
             </div>
             <div className='mt-2.5 md:mt-4 flex flex-col gap-0.5 md:gap-1 min-w-0'>
-                <p className='font-bold md:font-extrabold text-[13px] md:text-base leading-snug line-clamp-2'>
+                <p className='font-bold md:font-extrabold text-[13px] md:text-[15px] leading-snug line-clamp-2'>
                     {title}
                 </p>
                 <p className='text-gray-600 text-xs md:text-sm line-clamp-1'>{category}</p>

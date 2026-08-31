@@ -20,6 +20,7 @@ export const Fa = {
   invalidPhone: "شماره موبایل معتبر نیست. فرمت صحیح: ۰۹xxxxxxxxx",
   phoneAndCodeRequired: "شماره موبایل و کد تأیید الزامی است.",
   phoneAndPasswordRequired: "شماره موبایل و رمز عبور الزامی است.",
+  phoneRequired: "شماره موبایل الزامی است.",
   invalidOtp: "کد تأیید نامعتبر یا منقضی شده است.",
   invalidCredentials: "شماره موبایل یا رمز عبور اشتباه است.",
   userNotFound: "کاربر یافت نشد.",
@@ -28,17 +29,20 @@ export const Fa = {
 
   // رسانه
   fileRequired: "انتخاب فایل الزامی است.",
+  mediaInUse: "این فایل در بخش‌های دیگر استفاده می‌شود و قابل حذف نیست.",
 
   // کاربران / نقش
   roleIdRequired: "انتخاب نقش الزامی است.",
   userAlreadyHasRole: "این کاربر از قبل نقش دارد و قابل تغییر نیست.",
+  lastAdminCannotDelete: "امکان حذف آخرین ادمین وجود ندارد.",
   passwordMinLength: "رمز عبور باید حداقل ۶ کاراکتر باشد.",
 
   // نظرات / تماس
-  commentFieldsRequired: "نام، متن نظر و نوع هدف الزامی است.",
+  commentFieldsRequired: "نام و متن نظر الزامی است.",
   commentContentRequired: "متن پاسخ الزامی است.",
   commentTargetInvalid: "هدف نظر (محصول، مقاله یا والد) نامعتبر است.",
   commentTargetTypeInvalid: "نوع نظر باید محصول، مقاله یا پاسخ باشد.",
+  commentHasReplies: "این نظر دارای پاسخ است و قابل حذف نیست.",
   contactMessageRequired: "متن پیام الزامی است.",
 
   // دسته‌بندی
@@ -106,6 +110,7 @@ const KNOWN_ENGLISH: Record<string, string> = {
   "User already has a role": Fa.userAlreadyHasRole,
   "password min length 6": Fa.passwordMinLength,
   "content required": Fa.commentContentRequired,
+  "nickName, content required": Fa.commentFieldsRequired,
   "nickName, content, targetType required": Fa.commentFieldsRequired,
   "message required": Fa.contactMessageRequired,
   "Category has children": Fa.categoryHasChildren,

@@ -1,0 +1,19 @@
+:80 {
+	encode gzip
+
+	handle /api* {
+		reverse_proxy api:3002
+	}
+
+	handle /uploads* {
+		reverse_proxy api:3002
+	}
+
+	handle /admin* {
+		reverse_proxy admin:3001
+	}
+
+	handle {
+		reverse_proxy main:3000
+	}
+}

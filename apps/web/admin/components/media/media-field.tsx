@@ -7,7 +7,7 @@ import { toMediaRef } from "@agrohome/shared";
 import { mediaUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FormField } from "@/components/ui/form-field";
 import { MediaPicker } from "@/components/media/media-picker";
 
 type MediaFieldProps = {
@@ -28,10 +28,10 @@ export function MediaField({
   return (
     <div
       dir="rtl"
-      className="space-y-3 rounded-[var(--admin-radius)] border border-[var(--admin-border)] bg-[var(--admin-bg-elevated)]/50 p-3"
+      className="space-y-3 rounded-[var(--admin-radius)] border border-[var(--admin-border)] bg-[var(--admin-bg-elevated)] p-3"
     >
       <div className="flex items-center justify-between gap-2">
-        <Label>{label}</Label>
+        <p className="text-right text-sm font-medium">{label}</p>
         {media ? (
           <Button
             type="button"
@@ -59,7 +59,7 @@ export function MediaField({
         <button
           type="button"
           onClick={() => setPickerOpen(true)}
-          className="flex w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--admin-border)] bg-[var(--admin-bg)]/40 px-4 py-8 text-[var(--admin-muted)] transition hover:border-[var(--admin-primary)] hover:bg-[var(--admin-bg-elevated)] hover:text-[var(--admin-fg)]"
+          className="flex w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--admin-border)] bg-[var(--admin-bg-elevated)] px-4 py-8 text-[var(--admin-muted)] transition hover:border-[var(--admin-accent)] hover:text-[var(--admin-text)]"
         >
           <ImageIcon className="h-8 w-8 opacity-70" />
           <span className="text-sm font-medium">انتخاب از رسانه</span>
@@ -73,8 +73,7 @@ export function MediaField({
         </Button>
       </div>
 
-      <div className="space-y-2">
-        <Label className="text-xs text-[var(--admin-muted)]">متن جایگزین (alt)</Label>
+      <FormField label="متن جایگزین (alt)">
         <Input
           value={media?.alt || ""}
           onChange={(e) => {
@@ -84,7 +83,7 @@ export function MediaField({
           placeholder="توصیف تصویر"
           disabled={!media?.url}
         />
-      </div>
+      </FormField>
 
       {pickerOpen ? (
         <MediaPicker

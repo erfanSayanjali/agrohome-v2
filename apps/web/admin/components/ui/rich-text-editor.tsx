@@ -6,6 +6,7 @@ import type { Editor as TinyMCEEditor } from "tinymce";
 import { MediaPicker } from "@/components/media/media-picker";
 import { apiRequest, unwrap } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { withBasePath } from "@/lib/base-path";
 
 type MediaUploadResult = {
   url: string;
@@ -50,8 +51,36 @@ const TOOLBAR = [
 ].join(" | ");
 
 const CONTENT_STYLE = `
+  @font-face {
+    font-family: 'IRANSans';
+    src: url('${withBasePath("/fonts/IRANSansWeb.woff2")}') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: 'IRANSans';
+    src: url('${withBasePath("/fonts/IRANSansWeb_Medium.woff2")}') format('woff2');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: 'IRANSans';
+    src: url('${withBasePath("/fonts/IRANSansWeb_Bold.woff2")}') format('woff2');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: 'IRANSans';
+    src: url('${withBasePath("/fonts/IRANSansWeb_Black.woff2")}') format('woff2');
+    font-weight: 800;
+    font-style: normal;
+    font-display: swap;
+  }
   body {
-    font-family: Vazirmatn, Tahoma, sans-serif;
+    font-family: 'IRANSans', Tahoma, sans-serif;
     font-size: 15px;
     line-height: 1.8;
     color: #f3f6f5;
@@ -62,6 +91,7 @@ const CONTENT_STYLE = `
   a { color: #f4c111; }
   h1, h2, h3, h4, h5, h6 {
     color: #f3f6f5;
+    font-family: 'IRANSans', Tahoma, sans-serif;
     font-weight: 700;
     line-height: 1.4;
   }
@@ -123,13 +153,15 @@ export function RichTextEditor({
       toolbar: TOOLBAR,
       toolbar_mode: "wrap" as const,
       skin: "oxide-dark",
-      content_css: "dark",
+      content_css: false,
       content_style: CONTENT_STYLE,
       directionality: "rtl" as const,
       placeholder: placeholder || "متن را اینجا بنویسید…",
       relative_urls: false,
       remove_script_host: false,
       convert_urls: true,
+      base_url: withBasePath("/tinymce"),
+      suffix: ".min",
       image_title: true,
       automatic_uploads: true,
       file_picker_types: "image",
@@ -153,7 +185,7 @@ export function RichTextEditor({
   return (
     <div className={cn("admin-tinymce", className)} id={id} data-no-persian-digits>
       <Editor
-        tinymceScriptSrc="/tinymce/tinymce.min.js"
+        tinymceScriptSrc={withBasePath("/tinymce/tinymce.min.js")}
         licenseKey="gpl"
         disabled={disabled}
         value={value ?? ""}

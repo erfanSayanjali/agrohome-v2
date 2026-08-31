@@ -2,6 +2,15 @@ import type { PrismaClient } from "@prisma/client";
 import { toMediaRef } from "@agrohome/shared";
 import { normalizeGallery } from "./media";
 
+const USAGE_INDEX_TTL_MS = 60_000;
+let cachedUsageIndex: {
+  map: Map<string, MediaUsage[]>;
+  builtAt: number;
+} | null = null;
+
+export function invalidateMediaUsageIndex(): void {
+  cachedUsageIndex = null;
+}
 export type MediaUsageEntityType =
   | "product"
   | "blog"
@@ -81,10 +90,19 @@ function mediaUrlFromJson(value: unknown): string | null {
  * اسکن موجودیت‌ها و ساخت ایندکس URL → usages
  */
 export async function buildMediaUsageIndex(
-  prisma: PrismaClient
+  prisma: PrismaClient,
+  options?: { fresh?: boolean }
 ): Promise<Map<string, MediaUsage[]>> {
-  const index = new Map<string, MediaUsage[]>();
+  const now = Date.now();
+  if (
+    !options?.fresh &&
+    cachedUsageIndex &&
+    now - cachedUsageIndex.builtAt < USAGE_INDEX_TTL_MS
+  ) {
+    return cachedUsageIndex.map;
+  }
 
+  const index = new Map<string, MediaUsage[]>();
   const [products, blogs, blogCategories, users, settings, blocks] =
     await Promise.all([
       prisma.product.findMany({
@@ -200,7 +218,16 @@ export async function buildMediaUsageIndex(
     }
   }
 
+  cachedUsageIndex = { map: index, builtAt: Date.now() };
   return index;
+}
+export function compactMediaUsages(usages: MediaUsage[]): MediaUsage[] {
+  const seen = new Map<string, MediaUsage>();
+  for (const usage of usages) {
+    const key = `${usage.entityType}:${usage.entityId}`;
+    if (!seen.has(key)) seen.set(key, usage);
+  }
+  return [...seen.values()];
 }
 
 export function urlsForEntityType(

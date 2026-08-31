@@ -17,10 +17,10 @@ const Slider = ({ slides, pagination = false, sliderClass='slider-default' , cla
     };
 
     return (
-        <>
+        <div className="w-full max-w-full overflow-x-clip">
             <div
                 style={{gap}}
-                className={` ${sliderClass} ${className} flex max-w-7xl  z-10 overflow-hidden ${!init ? '' : 'hidden!'}`}
+                className={` ${sliderClass} ${className} flex max-w-7xl z-10 overflow-hidden ${!init ? '' : 'hidden!'}`}
             >
                 {slides.map((slide, index) => (
                         
@@ -32,7 +32,7 @@ const Slider = ({ slides, pagination = false, sliderClass='slider-default' , cla
             </div>
             <Swiper
                 spaceBetween={gap}
-                className={`  ${sliderClass} ${className} ${init ? '' : 'hidden!'}`}
+                className={`w-full max-w-full overflow-hidden ${sliderClass} ${className} ${init ? '' : 'hidden!'}`}
                 slidesPerView={'auto'}
                 modules={[Pagination]}
                 pagination={pagination || paginationDefault}
@@ -50,7 +50,7 @@ const Slider = ({ slides, pagination = false, sliderClass='slider-default' , cla
                 ))}
             </Swiper>
 
-        </>
+        </div>
     );
 }
 

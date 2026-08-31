@@ -9,6 +9,7 @@ const apiUrl = new URL(apiOrigin);
 
 const nextConfig: NextConfig = {
   reactStrictMode: false,
+  transpilePackages: ["@agrohome/shared"],
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -24,6 +25,10 @@ const nextConfig: NextConfig = {
   },
   async rewrites() {
     return [
+      {
+        source: "/api/v1/:path*",
+        destination: `${apiOrigin}/api/v1/:path*`,
+      },
       {
         source: "/uploads/:path*",
         destination: `${apiOrigin}/uploads/:path*`,

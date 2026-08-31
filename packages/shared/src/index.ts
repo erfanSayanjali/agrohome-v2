@@ -57,6 +57,67 @@ export type CategoryTreeNode = {
 
 export const API_PREFIX = "/api/v1";
 
+export const CMS_DEFAULT_REVALIDATE_SECONDS = 3600;
+export const CMS_LAYOUT_TAG = "cms-layout";
+export const CMS_PAGES_INDEX_TAG = "cms-pages-index";
+export const PRODUCTS_TAG = "products";
+export const PRODUCT_REVALIDATE_SECONDS = 3600;
+
+export function productTag(slug: string): string {
+  const bare = String(slug || "")
+    .trim()
+    .replace(/^\/+/, "")
+    .replace(/\/+$/, "");
+  return `product:${bare || "unknown"}`;
+}
+
+export function productPath(slug: string): string {
+  const bare = String(slug || "")
+    .trim()
+    .replace(/^\/+/, "")
+    .replace(/\/+$/, "");
+  return `/product/${bare}`;
+}
+
+const CMS_DEDICATED_SLUGS = ["/", "/about", "/contact"] as const;
+const CMS_RESERVED_PREFIXES = [
+  "/products",
+  "/product",
+  "/blogs",
+  "/blog",
+] as const;
+
+/** `/` و `home` → `/` ؛ `about` و `/about` → `/about` */
+export function normalizeCmsSlug(slug: string): string {
+  let raw = (slug || "/").trim();
+  try {
+    raw = decodeURIComponent(raw);
+  } catch {
+    /* keep raw */
+  }
+  const bare = raw.replace(/^\/+/, "").replace(/\/+$/, "");
+  if (!bare || bare === "home") return "/";
+  return `/${bare}`;
+}
+
+export function cmsPageTag(slug: string): string {
+  return `cms-page:${normalizeCmsSlug(slug)}`;
+}
+
+export function cmsPagePath(slug: string): string {
+  return normalizeCmsSlug(slug);
+}
+
+export function isCmsCatchAllSlug(slug: string): boolean {
+  const normalized = normalizeCmsSlug(slug);
+  if ((CMS_DEDICATED_SLUGS as readonly string[]).includes(normalized)) {
+    return false;
+  }
+  return !CMS_RESERVED_PREFIXES.some(
+    (prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`)
+  );
+}
+
 export type ListMeta = {
   page: number;
   limit: number;

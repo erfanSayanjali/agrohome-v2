@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Eye, EyeOff, Loader2, MessageSquareReply, RefreshCw } from "lucide-react";
+import { Eye, EyeOff, Home, Loader2, MessageSquareReply, RefreshCw } from "lucide-react";
 import { apiGet, apiPost, apiPut, ApiError, unwrapList } from "@/lib/api";
+import type { ListResponse } from "@agrohome/shared";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FormField } from "@/components/ui/form-field";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -23,6 +24,7 @@ type CommentRow = {
   nickName: string;
   content: string;
   publish: boolean;
+  showOnHome?: boolean;
   rating?: number | null;
   email?: string | null;
   createdAt?: string;
@@ -51,7 +53,7 @@ export function EntityCommentsPanel({ targetType, entityId, entityTitle }: Props
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await apiGet<{ content: CommentRow[]; total?: number }>("/admin/comments", {
+      const res = await apiGet<ListResponse<CommentRow>>("/admin/comments", {
         page: 1,
         limit: 50,
         sort: "-createdAt",
@@ -120,9 +122,12 @@ export function EntityCommentsPanel({ targetType, entityId, entityTitle }: Props
                     </p>
                   ) : null}
                 </div>
-                <Badge variant={row.publish ? "success" : "danger"}>
-                  {row.publish ? "منتشر" : "در انتظار"}
-                </Badge>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <Badge variant={row.publish ? "success" : "danger"}>
+                    {row.publish ? "منتشر" : "در انتظار"}
+                  </Badge>
+                  {row.showOnHome ? <Badge variant="accent">صفحه اصلی</Badge> : null}
+                </div>
               </div>
               <p className="mt-2 text-sm leading-relaxed whitespace-pre-wrap">{row.content}</p>
               <div className="mt-3 flex flex-wrap items-center gap-1">
@@ -142,6 +147,29 @@ export function EntityCommentsPanel({ targetType, entityId, entityTitle }: Props
                 >
                   {row.publish ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                   {row.publish ? "لغو انتشار" : "انتشار"}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={async () => {
+                    try {
+                      await apiPut(`/admin/comments/${row.id}`, {
+                        showOnHome: !row.showOnHome,
+                      });
+                      toast.success(
+                        row.showOnHome
+                          ? "از صفحه اصلی حذف شد"
+                          : "در صفحه اصلی نمایش داده می‌شود"
+                      );
+                      void load();
+                    } catch (err) {
+                      toast.error(err instanceof ApiError ? err.message : "خطا");
+                    }
+                  }}
+                >
+                  <Home className="h-3.5 w-3.5" />
+                  {row.showOnHome ? "حذف از صفحه اصلی" : "نمایش در صفحه اصلی"}
                 </Button>
                 <Button
                   type="button"
@@ -177,14 +205,12 @@ export function EntityCommentsPanel({ targetType, entityId, entityTitle }: Props
             <DialogTitle>پاسخ به نظر</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <div className="space-y-2">
-              <Label>نام پاسخ‌دهنده</Label>
+            <FormField label="نام پاسخ‌دهنده">
               <Input value={replyName} onChange={(e) => setReplyName(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>متن پاسخ</Label>
+            </FormField>
+            <FormField label="متن پاسخ">
               <Textarea value={replyText} onChange={(e) => setReplyText(e.target.value)} />
-            </div>
+            </FormField>
           </div>
           <DialogFooter>
             <Button type="button" variant="secondary" onClick={() => setReplyFor(null)}>

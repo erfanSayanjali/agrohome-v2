@@ -43,7 +43,7 @@ const ContactIntro = ({ cms } = {}) => {
 
   return (
     <>
-      <h1 className="my-4 px-3 text-xl font-extrabold md:px-0 md:text-2xl">{title}</h1>
+      <h1 className="mb-4 mt-0 px-3 text-xl font-extrabold md:px-0 md:text-2xl">{title}</h1>
       <p className="px-3 text-justify leading-relaxed text-gray-600 md:px-0">{text}</p>
       <div className="mt-10 flex flex-col items-center gap-6 md:flex-row md:justify-end">
         {channels.map((ch, i) => (

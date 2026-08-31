@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FormField } from "@/components/ui/form-field";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -101,10 +101,7 @@ export function DataToolbar({
   return (
     <div className="mb-4 flex flex-col gap-3">
       <div className="flex flex-wrap items-end gap-3">
-        <div className="min-w-[14rem] flex-1">
-          <Label htmlFor="toolbar-search" className="mb-1.5 block text-[var(--admin-muted)]">
-            جستجو
-          </Label>
+        <FormField label="جستجو" htmlFor="toolbar-search" className="min-w-[14rem] flex-1">
           <div className="relative">
             <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--admin-muted)]" />
             <Input
@@ -115,11 +112,10 @@ export function DataToolbar({
               className="ps-9"
             />
           </div>
-        </div>
+        </FormField>
 
         {sortOptions?.length ? (
-          <div className="w-44">
-            <Label className="mb-1.5 block text-[var(--admin-muted)]">مرتب‌سازی</Label>
+          <FormField label="مرتب‌سازی" className="w-44">
             <Select
               value={state.sort}
               onValueChange={(value) => onChange({ sort: value }, { resetPage: true })}
@@ -135,12 +131,11 @@ export function DataToolbar({
                 ))}
               </SelectContent>
             </Select>
-          </div>
+          </FormField>
         ) : null}
 
         {filters?.map((filter) => (
-          <div key={filter.key} className="w-44">
-            <Label className="mb-1.5 block text-[var(--admin-muted)]">{filter.label}</Label>
+          <FormField key={filter.key} label={filter.label} className="w-44">
             <Select
               value={
                 state.filters[filter.key] === undefined || state.filters[filter.key] === ""
@@ -166,7 +161,7 @@ export function DataToolbar({
                 ))}
               </SelectContent>
             </Select>
-          </div>
+          </FormField>
         ))}
 
         {actions ? <div className="ms-auto flex items-center gap-2 pb-0.5">{actions}</div> : null}

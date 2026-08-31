@@ -1,8 +1,10 @@
 import type { PrismaClient } from "@prisma/client";
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { ok, okList, parseListQuery, prismaOrderBy } from "./helpers";
 import { Fa, mapPrismaError, toPersianMessage } from "./errors";
-import { requireAdmin, requirePermission } from "../plugins/auth";
+import { requirePermission } from "../plugins/auth";
+
+type CrudRecord = Record<string, unknown>;
 
 type CrudOptions = {
   entity: string;
@@ -11,8 +13,28 @@ type CrudOptions = {
   mapCreate?: (body: Record<string, unknown>) => Record<string, unknown>;
   mapUpdate?: (body: Record<string, unknown>) => Record<string, unknown>;
   beforeDelete?: (app: FastifyInstance, id: string) => Promise<void>;
+  afterCreate?: (app: FastifyInstance, item: CrudRecord) => Promise<void>;
+  afterUpdate?: (
+    app: FastifyInstance,
+    item: CrudRecord,
+    previous: CrudRecord | null
+  ) => Promise<void>;
+  afterDelete?: (
+    app: FastifyInstance,
+    previous: CrudRecord | null
+  ) => Promise<void>;
   /** فعال‌سازی PUT /admin/{path}/reorder برای sortOrder */
   sortable?: boolean;
+  beforeCreate?: (
+    request: FastifyRequest,
+    body: Record<string, unknown>,
+    reply: FastifyReply
+  ) => Promise<boolean>;
+  beforeUpdate?: (
+    request: FastifyRequest,
+    body: Record<string, unknown>,
+    reply: FastifyReply
+  ) => Promise<boolean>;
 };
 
 function getDelegate(prisma: PrismaClient, model: string) {
@@ -30,7 +52,7 @@ export function registerAdminCrud(
 ) {
   const base = `/admin/${path}`;
 
-  app.get(base, { preHandler: [requireAdmin] }, async (request) => {
+  app.get(base, { preHandler: [requirePermission(options.entity, "read")] }, async (request) => {
     const q = parseListQuery(request.query as Record<string, unknown>);
     const where: Record<string, unknown> = { ...q.filters };
     if (q.search && options.searchFields?.length) {
@@ -77,7 +99,7 @@ export function registerAdminCrud(
     );
   }
 
-  app.get(`${base}/:id`, { preHandler: [requireAdmin] }, async (request, reply) => {
+  app.get(`${base}/:id`, { preHandler: [requirePermission(options.entity, "read")] }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const item = await getDelegate(app.prisma, model).findUnique({
       where: { id },
@@ -93,11 +115,18 @@ export function registerAdminCrud(
     async (request, reply) => {
       try {
         const body = (request.body ?? {}) as Record<string, unknown>;
+        if (options.beforeCreate) {
+          const allowed = await options.beforeCreate(request, body, reply);
+          if (!allowed) return;
+        }
         const data = options.mapCreate ? options.mapCreate(body) : body;
         const item = await getDelegate(app.prisma, model).create({
           data,
           include: options.include,
         });
+        if (options.afterCreate) {
+          await options.afterCreate(app, item as CrudRecord);
+        }
         return ok(item);
       } catch (err) {
         const mapped = mapPrismaError(err);
@@ -120,13 +149,24 @@ export function registerAdminCrud(
     async (request, reply) => {
       const { id } = request.params as { id: string };
       const body = (request.body ?? {}) as Record<string, unknown>;
+      if (options.beforeUpdate) {
+        const allowed = await options.beforeUpdate(request, body, reply);
+        if (!allowed) return;
+      }
       const data = options.mapUpdate ? options.mapUpdate(body) : body;
       try {
-        const item = await getDelegate(app.prisma, model).update({
+        const delegate = getDelegate(app.prisma, model);
+        const previous = (await delegate.findUnique({
+          where: { id },
+        })) as CrudRecord | null;
+        const item = await delegate.update({
           where: { id },
           data,
           include: options.include,
         });
+        if (options.afterUpdate) {
+          await options.afterUpdate(app, item as CrudRecord, previous);
+        }
         return ok(item);
       } catch (err) {
         const mapped = mapPrismaError(err);
@@ -148,10 +188,17 @@ export function registerAdminCrud(
     async (request, reply) => {
       const { id } = request.params as { id: string };
       try {
+        const delegate = getDelegate(app.prisma, model);
+        const previous = (await delegate.findUnique({
+          where: { id },
+        })) as CrudRecord | null;
         if (options.beforeDelete) {
           await options.beforeDelete(app, id);
         }
-        await getDelegate(app.prisma, model).delete({ where: { id } });
+        await delegate.delete({ where: { id } });
+        if (options.afterDelete) {
+          await options.afterDelete(app, previous);
+        }
         return ok({ id });
       } catch (err) {
         if (reply.sent) return;

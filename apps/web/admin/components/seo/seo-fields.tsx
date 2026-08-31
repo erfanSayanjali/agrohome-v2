@@ -4,8 +4,8 @@ import { useState } from "react";
 import { Plus, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { FormField } from "@/components/ui/form-field";
 import { keywordsToArray, type SeoFormValues } from "@/lib/seo";
 
 type SeoFieldsProps = {
@@ -48,17 +48,15 @@ export function SeoFields({ value, onChange, pathReadOnly = true, className }: S
 
   return (
     <div className={className ?? "space-y-4"} dir="rtl">
-      <div className="space-y-2">
-        <Label htmlFor="seo-metaTitle">عنوان متا</Label>
+      <FormField label="عنوان متا" htmlFor="seo-metaTitle">
         <Input
           id="seo-metaTitle"
           value={value.metaTitle}
           onChange={(e) => patch("metaTitle", e.target.value)}
           placeholder="عنوان نمایش‌داده‌شده در نتایج جستجو"
         />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="seo-metaDescription">توضیح متا</Label>
+      </FormField>
+      <FormField label="توضیح متا" htmlFor="seo-metaDescription">
         <Textarea
           id="seo-metaDescription"
           value={value.metaDescription}
@@ -66,9 +64,8 @@ export function SeoFields({ value, onChange, pathReadOnly = true, className }: S
           placeholder="خلاصه کوتاه برای موتورهای جستجو"
           className="min-h-[100px]"
         />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="seo-metaKeyWords">کلمات کلیدی</Label>
+      </FormField>
+      <FormField label="کلمات کلیدی" htmlFor="seo-metaKeyWords">
         <div className="flex gap-2">
           <Input
             id="seo-metaKeyWords"
@@ -109,33 +106,30 @@ export function SeoFields({ value, onChange, pathReadOnly = true, className }: S
         ) : (
           <p className="text-xs text-[var(--admin-muted)]">هنوز کلمه‌ای اضافه نشده است</p>
         )}
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="seo-canonicalUrl">Canonical</Label>
+      </FormField>
+      <FormField label="Canonical" htmlFor="seo-canonicalUrl">
         <Input
           id="seo-canonicalUrl"
           dir="ltr"
           value={value.canonicalUrl}
           onChange={(e) => patch("canonicalUrl", e.target.value)}
           placeholder="https://example.com/..."
-          className="text-start"
         />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="seo-targetPath">مسیر هدف</Label>
+      </FormField>
+      <FormField
+        label="مسیر هدف"
+        htmlFor="seo-targetPath"
+        hint={pathReadOnly ? "از روی اسلاگ موجودیت به‌روز می‌شود" : undefined}
+      >
         <Input
           id="seo-targetPath"
           dir="ltr"
           value={value.targetPath}
           onChange={(e) => patch("targetPath", e.target.value)}
           readOnly={pathReadOnly}
-          className="text-start"
           placeholder="/products/slug"
         />
-        {pathReadOnly ? (
-          <p className="text-xs text-[var(--admin-muted)]">از روی اسلاگ موجودیت به‌روز می‌شود</p>
-        ) : null}
-      </div>
+      </FormField>
     </div>
   );
 }

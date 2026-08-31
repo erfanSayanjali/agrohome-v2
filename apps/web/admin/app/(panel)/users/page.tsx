@@ -1,21 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
-import { apiGet, apiPost, ApiError, unwrapList } from "@/lib/api";
+import { useEffect, useMemo, useState } from "react";
+import { apiGet, unwrapList } from "@/lib/api";
 import type { ListResponse } from "@agrohome/shared";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { CrudResourcePage } from "@/components/data/crud-resource-page";
-import { Combobox } from "@/components/ui/combobox";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 
 type Role = { id: string; title: string };
 type User = {
@@ -30,9 +19,6 @@ type User = {
 
 export default function UsersPage() {
   const [roles, setRoles] = useState<Role[]>([]);
-  const [assignUser, setAssignUser] = useState<User | null>(null);
-  const [roleId, setRoleId] = useState("");
-  const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
     apiGet<ListResponse<Role>>("/admin/roles", { limit: 100 })
@@ -40,91 +26,86 @@ export default function UsersPage() {
       .catch(() => setRoles([]));
   }, []);
 
-  return (
-    <>
-      <CrudResourcePage<User>
-        key={reloadToken}
-        title="کاربران"
-        description="اختصاص نقش طبق قانون PRD"
-        path="/admin/users"
-        searchPlaceholder="موبایل یا نام…"
-        disableCreate
-        disableEdit
-        disableDelete
-        columns={[
-          { key: "phone", header: "موبایل", cell: (r) => <span dir="ltr">{r.phone}</span> },
-          {
-            key: "name",
-            header: "نام",
-            filter: { key: "firstName", type: "text", placeholder: "نام…" },
-            cell: (r) => [r.firstName, r.lastName].filter(Boolean).join(" ") || "—",
-          },
-          {
-            key: "role",
-            header: "نقش",
-            filter: {
-              key: "roleId",
-              type: "select",
-              options: roles.map((r) => ({ value: r.id, label: r.title })),
-              placeholder: "نقش",
-            },
-            cell: (r) => r.role?.title || <Badge variant="muted">بدون نقش</Badge>,
-          },
-          {
-            key: "pw",
-            header: "رمز",
-            filter: false,
-            cell: (r) => (r.hasPassword ? <Badge variant="success">دارد</Badge> : "—"),
-          },
-        ]}
-        fields={[]}
-        extraActions={(row) => (
-          <Button type="button" size="sm" variant="secondary" onClick={() => {
-            setAssignUser(row);
-            setRoleId(row.roleId || "");
-          }}>
-            نقش
-          </Button>
-        )}
-      />
+  const roleOptions = useMemo(
+    () => roles.map((r) => ({ value: r.id, label: r.title })),
+    [roles]
+  );
 
-      <Dialog open={Boolean(assignUser)} onOpenChange={(o) => !o && setAssignUser(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>اختصاص نقش</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-2">
-            <Label>نقش</Label>
-            <Combobox
-              options={roles.map((r) => ({ value: r.id, label: r.title }))}
-              value={roleId}
-              onChange={setRoleId}
-              placeholder="انتخاب نقش"
-            />
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="secondary" onClick={() => setAssignUser(null)}>
-              انصراف
-            </Button>
-            <Button
-              type="button"
-              onClick={async () => {
-                if (!assignUser || !roleId) return;
-                try {
-                  await apiPost(`/admin/users/${assignUser.id}/assign-role`, { roleId });
-                  toast.success("نقش اختصاص یافت");
-                  setAssignUser(null);
-                  setReloadToken((t) => t + 1);
-                } catch (err) {
-                  toast.error(err instanceof ApiError ? err.message : "خطا");
-                }
-              }}
-            >
-              ذخیره
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+  const adminRoleId = roles[0]?.id ?? "";
+
+  return (
+    <CrudResourcePage<User>
+      title="کاربران"
+      description="مدیریت کاربران، نقش‌ها و رمز ورود"
+      path="/admin/users"
+      searchPlaceholder="موبایل یا نام…"
+      columns={[
+        { key: "phone", header: "موبایل", cell: (r) => <span dir="ltr">{r.phone}</span> },
+        {
+          key: "name",
+          header: "نام",
+          filter: { key: "firstName", type: "text", placeholder: "نام…" },
+          cell: (r) => [r.firstName, r.lastName].filter(Boolean).join(" ") || "—",
+        },
+        {
+          key: "role",
+          header: "نقش",
+          filter: {
+            key: "roleId",
+            type: "select",
+            options: roleOptions,
+            placeholder: "نقش",
+          },
+          cell: (r) => r.role?.title || <Badge variant="muted">بدون نقش</Badge>,
+        },
+        {
+          key: "pw",
+          header: "رمز",
+          filter: false,
+          cell: (r) => (r.hasPassword ? <Badge variant="success">دارد</Badge> : "—"),
+        },
+      ]}
+      fields={[
+        { name: "phone", label: "موبایل", required: true, dir: "ltr", placeholder: "09123456789" },
+        { name: "firstName", label: "نام" },
+        { name: "lastName", label: "نام خانوادگی" },
+        {
+          name: "roleId",
+          label: "نقش",
+          type: "combobox",
+          options: roleOptions,
+          placeholder: "انتخاب نقش",
+        },
+        {
+          name: "password",
+          label: "رمز عبور",
+          required: true,
+          dir: "ltr",
+          placeholder: "حداقل ۶ کاراکتر",
+        },
+      ]}
+      createDefaults={{
+        roleId: adminRoleId,
+      }}
+      mapRowToForm={(r) => ({
+        phone: r.phone,
+        firstName: r.firstName ?? "",
+        lastName: r.lastName ?? "",
+        roleId: r.roleId ?? "",
+        password: "",
+      })}
+      mapFormToBody={(v, mode) => {
+        const body: Record<string, unknown> = {
+          phone: String(v.phone ?? "").trim(),
+          firstName: String(v.firstName ?? "").trim() || null,
+          lastName: String(v.lastName ?? "").trim() || null,
+          roleId: v.roleId ? String(v.roleId) : null,
+        };
+        const password = String(v.password ?? "").trim();
+        if (password) body.password = password;
+        else if (mode === "create") body.password = "";
+        return body;
+      }}
+    />
   );
 }

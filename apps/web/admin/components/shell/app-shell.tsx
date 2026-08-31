@@ -25,6 +25,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { withBasePath } from "@/lib/base-path";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -386,7 +387,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => void logout().then(() => (window.location.href = "/login"))}
+            onClick={() => void logout().then(() => (window.location.href = withBasePath("/login")))}
           >
             <LogOut className="h-4 w-4" />
             خروج

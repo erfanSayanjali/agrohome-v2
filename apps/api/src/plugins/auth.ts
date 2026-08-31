@@ -59,7 +59,7 @@ export function requirePermission(
       actions?: string[];
     }>;
     if (!Array.isArray(permissions) || permissions.length === 0) {
-      return;
+      return reply.forbidden(permissionDeniedMessage(entity, action));
     }
     const rule = permissions.find((p) => p.entity === entity || p.entity === "*");
     if (!rule || !(rule.actions ?? []).includes(action)) {

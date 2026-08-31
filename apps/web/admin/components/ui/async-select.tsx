@@ -147,11 +147,11 @@ export function AsyncSelect({
         <PopoverPrimitive.Trigger asChild>
           <Button
             type="button"
-            variant="outline"
+            variant="field"
             role="combobox"
             disabled={disabled}
             aria-expanded={open}
-            className="min-w-0 flex-1 justify-between font-normal text-start"
+            className="min-w-0 flex-1 justify-between text-start"
           >
             <span className={cn("truncate", !value && "text-[var(--admin-muted)]")}>
               {value ? display : placeholder}

@@ -7,10 +7,12 @@ import { apiGet, apiPut, ApiError, unwrap } from "@/lib/api";
 import { MediaField } from "@/components/media/media-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { FormField } from "@/components/ui/form-field";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 type SocialLink = { label: string; href: string };
+type NavLink = { title: string; href: string };
 type FooterLink = { title: string; href: string };
 type FooterLinkGroup = { title: string; links: FooterLink[] };
 
@@ -20,8 +22,17 @@ type SiteSettings = {
   faviconUrl: string | null;
   footerText: string | null;
   socialLinks: SocialLink[];
+  headerLinks: NavLink[];
   footerLinkGroups: FooterLinkGroup[];
 };
+
+const DEFAULT_HEADER_LINKS: NavLink[] = [
+  { title: "صفحه اصلی", href: "/" },
+  { title: "محصولات", href: "/products" },
+  { title: "وبلاگ", href: "/blogs" },
+  { title: "درباره ما", href: "/about" },
+  { title: "تماس با ما", href: "/contact" },
+];
 
 const emptySettings: SiteSettings = {
   id: "default",
@@ -29,6 +40,7 @@ const emptySettings: SiteSettings = {
   faviconUrl: null,
   footerText: "",
   socialLinks: [],
+  headerLinks: DEFAULT_HEADER_LINKS,
   footerLinkGroups: [],
 };
 
@@ -36,6 +48,14 @@ function asSocialLinks(value: unknown): SocialLink[] {
   if (!Array.isArray(value)) return [];
   return value.map((item) => ({
     label: typeof item?.label === "string" ? item.label : "",
+    href: typeof item?.href === "string" ? item.href : "",
+  }));
+}
+
+function asNavLinks(value: unknown): NavLink[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => ({
+    title: typeof item?.title === "string" ? item.title : "",
     href: typeof item?.href === "string" ? item.href : "",
   }));
 }
@@ -53,6 +73,19 @@ function asFooterGroups(value: unknown): FooterLinkGroup[] {
   }));
 }
 
+function normalizeSettings(data: Partial<SiteSettings> & { id?: string }): SiteSettings {
+  const headerLinks = asNavLinks(data.headerLinks);
+  return {
+    id: data.id || "default",
+    logoUrl: data.logoUrl ?? null,
+    faviconUrl: data.faviconUrl ?? null,
+    footerText: data.footerText ?? "",
+    socialLinks: asSocialLinks(data.socialLinks),
+    headerLinks: headerLinks.length ? headerLinks : DEFAULT_HEADER_LINKS,
+    footerLinkGroups: asFooterGroups(data.footerLinkGroups),
+  };
+}
+
 export default function SiteSettingsPage() {
   const [form, setForm] = useState<SiteSettings>(emptySettings);
   const [loading, setLoading] = useState(true);
@@ -61,15 +94,7 @@ export default function SiteSettingsPage() {
   useEffect(() => {
     apiGet<{ content: SiteSettings }>("/admin/site-settings")
       .then((res) => {
-        const data = unwrap(res);
-        setForm({
-          id: data.id || "default",
-          logoUrl: data.logoUrl ?? null,
-          faviconUrl: data.faviconUrl ?? null,
-          footerText: data.footerText ?? "",
-          socialLinks: asSocialLinks(data.socialLinks),
-          footerLinkGroups: asFooterGroups(data.footerLinkGroups),
-        });
+        setForm(normalizeSettings(unwrap(res)));
       })
       .catch((err) => {
         toast.error(err instanceof ApiError ? err.message : "خطا در بارگذاری");
@@ -85,6 +110,7 @@ export default function SiteSettingsPage() {
         faviconUrl: form.faviconUrl,
         footerText: form.footerText,
         socialLinks: form.socialLinks.filter((s) => s.label.trim() || s.href.trim()),
+        headerLinks: form.headerLinks.filter((l) => l.title.trim() || l.href.trim()),
         footerLinkGroups: form.footerLinkGroups
           .map((g) => ({
             title: g.title.trim(),
@@ -92,15 +118,7 @@ export default function SiteSettingsPage() {
           }))
           .filter((g) => g.title || g.links.length),
       });
-      const data = unwrap(res);
-      setForm({
-        id: data.id || "default",
-        logoUrl: data.logoUrl ?? null,
-        faviconUrl: data.faviconUrl ?? null,
-        footerText: data.footerText ?? "",
-        socialLinks: asSocialLinks(data.socialLinks),
-        footerLinkGroups: asFooterGroups(data.footerLinkGroups),
-      });
+      setForm(normalizeSettings(unwrap(res)));
       toast.success("تنظیمات ذخیره شد");
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "خطا در ذخیره");
@@ -124,7 +142,7 @@ export default function SiteSettingsPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">تنظیمات سایت</h1>
           <p className="text-sm text-[var(--admin-muted)]">
-            لوگو، favicon، متن فوتر، شبکه‌های اجتماعی و لینک‌های فوتر
+            لوگو، favicon، لینک‌های هدر، متن فوتر، شبکه‌های اجتماعی و لینک‌های فوتر
           </p>
         </div>
         <Button type="button" onClick={save} disabled={saving}>
@@ -149,16 +167,93 @@ export default function SiteSettingsPage() {
             value={form.faviconUrl ? { url: form.faviconUrl } : null}
             onChange={(next) => setForm((f) => ({ ...f, faviconUrl: next?.url || null }))}
           />
-          <div className="space-y-2">
-            <Label htmlFor="footerText">متن زیر لوگو (فوتر)</Label>
-            <textarea
+          <FormField label="متن زیر لوگو (فوتر)" htmlFor="footerText">
+            <Textarea
               id="footerText"
               rows={4}
-              className="flex w-full rounded-[var(--admin-radius-sm)] border border-[var(--admin-border)] bg-[var(--admin-bg-elevated)] px-3 py-2 text-sm text-[var(--admin-text)] placeholder:text-[var(--admin-muted)]"
               value={form.footerText ?? ""}
               onChange={(e) => setForm((f) => ({ ...f, footerText: e.target.value }))}
             />
+          </FormField>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
+          <div>
+            <CardTitle>لینک‌های هدر</CardTitle>
+            <CardDescription>
+              منوی ناوبری سایت؛ لینک <span dir="ltr">/products</span> به‌صورت مگامنو دسته‌بندی نمایش داده می‌شود
+            </CardDescription>
           </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            onClick={() =>
+              setForm((f) => ({
+                ...f,
+                headerLinks: [...f.headerLinks, { title: "", href: "" }],
+              }))
+            }
+          >
+            <Plus className="h-4 w-4" />
+            افزودن
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {form.headerLinks.length === 0 ? (
+            <p className="text-sm text-[var(--admin-muted)]">موردی ثبت نشده است.</p>
+          ) : (
+            form.headerLinks.map((item, index) => (
+              <div
+                key={index}
+                className="flex flex-col gap-2 rounded-lg border border-[var(--admin-border)] p-3 sm:flex-row sm:items-end"
+              >
+                <FormField label="عنوان" className="min-w-0 flex-1">
+                  <Input
+                    value={item.title}
+                    onChange={(e) =>
+                      setForm((f) => {
+                        const headerLinks = [...f.headerLinks];
+                        headerLinks[index] = { ...headerLinks[index], title: e.target.value };
+                        return { ...f, headerLinks };
+                      })
+                    }
+                    placeholder="وبلاگ"
+                  />
+                </FormField>
+                <FormField label="آدرس" className="min-w-0 flex-1">
+                  <Input
+                    dir="ltr"
+                    value={item.href}
+                    onChange={(e) =>
+                      setForm((f) => {
+                        const headerLinks = [...f.headerLinks];
+                        headerLinks[index] = { ...headerLinks[index], href: e.target.value };
+                        return { ...f, headerLinks };
+                      })
+                    }
+                    placeholder="/blogs"
+                  />
+                </FormField>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  aria-label="حذف"
+                  onClick={() =>
+                    setForm((f) => ({
+                      ...f,
+                      headerLinks: f.headerLinks.filter((_, i) => i !== index),
+                    }))
+                  }
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))
+          )}
         </CardContent>
       </Card>
 
@@ -188,9 +283,11 @@ export default function SiteSettingsPage() {
             <p className="text-sm text-[var(--admin-muted)]">موردی ثبت نشده است.</p>
           ) : (
             form.socialLinks.map((item, index) => (
-              <div key={index} className="flex flex-col gap-2 rounded-lg border border-[var(--admin-border)] p-3 sm:flex-row sm:items-end">
-                <div className="min-w-0 flex-1 space-y-2">
-                  <Label>عنوان</Label>
+              <div
+                key={index}
+                className="flex flex-col gap-2 rounded-lg border border-[var(--admin-border)] p-3 sm:flex-row sm:items-end"
+              >
+                <FormField label="عنوان" className="min-w-0 flex-1">
                   <Input
                     value={item.label}
                     onChange={(e) =>
@@ -202,9 +299,8 @@ export default function SiteSettingsPage() {
                     }
                     placeholder="اینستاگرام"
                   />
-                </div>
-                <div className="min-w-0 flex-1 space-y-2">
-                  <Label>لینک</Label>
+                </FormField>
+                <FormField label="لینک" className="min-w-0 flex-1">
                   <Input
                     dir="ltr"
                     value={item.href}
@@ -217,7 +313,7 @@ export default function SiteSettingsPage() {
                     }
                     placeholder="https://…"
                   />
-                </div>
+                </FormField>
                 <Button
                   type="button"
                   size="icon"
@@ -269,8 +365,7 @@ export default function SiteSettingsPage() {
             form.footerLinkGroups.map((group, gIndex) => (
               <div key={gIndex} className="space-y-3 rounded-lg border border-[var(--admin-border)] p-4">
                 <div className="flex items-end gap-2">
-                  <div className="min-w-0 flex-1 space-y-2">
-                    <Label>عنوان گروه</Label>
+                  <FormField label="عنوان گروه" className="min-w-0 flex-1">
                     <Input
                       value={group.title}
                       onChange={(e) =>
@@ -285,7 +380,7 @@ export default function SiteSettingsPage() {
                       }
                       placeholder="دسترسی سریع"
                     />
-                  </div>
+                  </FormField>
                   <Button
                     type="button"
                     size="icon"
@@ -304,8 +399,7 @@ export default function SiteSettingsPage() {
 
                 {group.links.map((link, lIndex) => (
                   <div key={lIndex} className="flex flex-col gap-2 sm:flex-row sm:items-end">
-                    <div className="min-w-0 flex-1 space-y-2">
-                      <Label>عنوان لینک</Label>
+                    <FormField label="عنوان لینک" className="min-w-0 flex-1">
                       <Input
                         value={link.title}
                         onChange={(e) =>
@@ -318,9 +412,8 @@ export default function SiteSettingsPage() {
                           })
                         }
                       />
-                    </div>
-                    <div className="min-w-0 flex-1 space-y-2">
-                      <Label>آدرس</Label>
+                    </FormField>
+                    <FormField label="آدرس" className="min-w-0 flex-1">
                       <Input
                         dir="ltr"
                         value={link.href}
@@ -335,7 +428,7 @@ export default function SiteSettingsPage() {
                         }
                         placeholder="/products"
                       />
-                    </div>
+                    </FormField>
                     <Button
                       type="button"
                       size="icon"

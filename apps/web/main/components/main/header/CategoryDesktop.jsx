@@ -4,19 +4,13 @@ import Link from 'next/link';
 import { useEffect, useId, useRef, useState } from 'react';
 import { IoIosArrowBack } from 'react-icons/io';
 import { FaLeaf } from 'react-icons/fa';
-import { SlugifyFilter as Slugify } from '../../../utils/helper';
+import { productCategoryHref } from '../../../utils/paths';
 
 const catKey = (cat) => cat?._id || cat?.id || cat?.slug || cat?.title;
 
-const categoryHref = (...segments) => {
-  const path = segments
-    .filter(Boolean)
-    .map((s) => Slugify(String(s)))
-    .join('/');
-  return `/products/${path}?page=1`;
-};
+const categoryHref = (...segments) => `${productCategoryHref(...segments)}?page=1`;
 
-const CategoryDesktop = ({ categories = [] }) => {
+const CategoryDesktop = ({ categories = [], label = 'محصولات' }) => {
   const panelId = useId();
   const closeTimer = useRef(null);
   const openTimer = useRef(null);
@@ -27,6 +21,7 @@ const CategoryDesktop = ({ categories = [] }) => {
   const current =
     roots.find((c) => catKey(c) === catKey(activeRoot)) || roots[0] || null;
   const subs = current?.children || [];
+  const title = label || 'محصولات';
 
   const clearTimers = () => {
     clearTimeout(closeTimer.current);
@@ -57,7 +52,13 @@ const CategoryDesktop = ({ categories = [] }) => {
 
   useEffect(() => () => clearTimers(), []);
 
-  if (!roots.length) return null;
+  if (!roots.length) {
+    return (
+      <Link href="/products" className="flex h-full items-center gap-2 text-white">
+        {title}
+      </Link>
+    );
+  }
 
   return (
     <div
@@ -69,14 +70,13 @@ const CategoryDesktop = ({ categories = [] }) => {
         if (!e.currentTarget.contains(e.relatedTarget)) scheduleClose();
       }}
     >
-      <button
-        type="button"
+      <Link
+        href="/products"
         aria-expanded={open}
         aria-controls={panelId}
         className="flex h-full items-center gap-2 text-white"
-        onClick={() => setOpen((v) => !v)}
       >
-        کودهای خانگی
+        {title}
         <svg
           width="7"
           height="5"
@@ -91,17 +91,17 @@ const CategoryDesktop = ({ categories = [] }) => {
             fill="white"
           />
         </svg>
-      </button>
+      </Link>
 
-      {/* Hover bridge */}
-      <div className="pointer-events-none absolute inset-x-0 top-full h-3" aria-hidden />
+      {/* پل هاور تا فاصله بین تریگر و پنل منو را نبندد */}
+      <div className="absolute inset-x-0 top-full z-[119] h-3" aria-hidden />
 
       <div
         id={panelId}
         role="menu"
         aria-label="دسته‌بندی محصولات"
         className={`
-          absolute top-[calc(100%+10px)] right-0 z-50
+          absolute top-[calc(100%+8px)] right-0 z-[120]
           w-[min(92vw,720px)] overflow-hidden
           rounded-2xl border border-[#E6EFEA] bg-white
           shadow-[0_18px_50px_rgba(11,61,44,0.16)]
@@ -260,7 +260,7 @@ const CategoryDesktop = ({ categories = [] }) => {
                 href="/products"
                 className="inline-flex items-center gap-1.5 text-sm font-bold text-[#105238] transition hover:text-[#308060]"
               >
-                همه کودهای خانگی
+                همه محصولات
                 <IoIosArrowBack size={14} />
               </Link>
             </div>

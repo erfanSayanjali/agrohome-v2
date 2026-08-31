@@ -15,6 +15,7 @@ const COLUMN_KEY_ALIASES: Record<string, string | false> = {
   path: "targetPath",
   type: "targetType",
   featured: "isFeatured",
+  home: "showOnHome",
   highlight: "highlight",
   product: "productId",
   spec: "specificationId",

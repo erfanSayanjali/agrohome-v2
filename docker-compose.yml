@@ -1,0 +1,86 @@
+# Production / full-stack path routing:
+#   /admin*  → admin
+#   /api*    → api
+#   /uploads*→ api
+#   /*       → main
+#
+# Usage:
+#   docker compose up --build
+#
+# Optional local path-parity while developing on the host:
+#   docker compose -f docker-compose.proxy.yml up
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: agrohome
+    volumes:
+      - agrohome_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d agrohome"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: "3002"
+      HOST: 0.0.0.0
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/agrohome?schema=public
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      ADMIN_PHONE: ${ADMIN_PHONE:-09120000000}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      MAIN_SITE_URL: http://main:3000
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET:-dev-agrohome-revalidate-secret-change-me}
+    volumes:
+      - agrohome_uploads:/app/apps/api/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+
+  main:
+    build:
+      context: .
+      dockerfile: apps/web/main/Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      API_URL: http://api:3002
+      NEXT_PUBLIC_API_URL: ""
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET:-dev-agrohome-revalidate-secret-change-me}
+    depends_on:
+      - api
+
+  admin:
+    build:
+      context: .
+      dockerfile: apps/web/admin/Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: "3001"
+      API_URL: http://api:3002
+      NEXT_PUBLIC_API_URL: ""
+    depends_on:
+      - api
+
+  proxy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      - main
+      - admin
+      - api
+
+volumes:
+  agrohome_pg:
+  agrohome_uploads:

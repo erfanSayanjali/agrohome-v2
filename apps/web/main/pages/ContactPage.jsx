@@ -42,7 +42,7 @@ export default function ContactPage() {
 return(
   <div className="min-h-screen max-w-7xl lg:mx-auto md:mx-3 md:my-10">
    <Title />
-   <h1 className="md:text-2xl text-xl font-extrabold my-4 px-3 md:px-0">
+   <h1 className="mb-4 mt-0 px-3 text-xl font-extrabold md:px-0 md:text-2xl">
    لورم ایپسوم متن نمایشی با تولید ساختگی نامفهوم
    </h1>
    <p className="leading-relaxed text-justify text-gray-600 px-3 md:px-0">

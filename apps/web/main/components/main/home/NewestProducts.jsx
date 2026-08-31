@@ -12,12 +12,13 @@ const NewestProducts = ({ products = [], cms } = {}) => {
   const list = Array.isArray(products) ? products : [];
 
   return (
-    <div className="my-20 relative">
+    <div className="my-20 relative overflow-x-clip">
       <Image
-        className="absolute top-[-400px] h-[400px]"
+        className="pointer-events-none absolute top-[-400px] right-0 -z-10 h-[400px] w-auto"
         width={200}
         height={100}
-        alt="shape"
+        alt=""
+        aria-hidden
         src="/shape1.svg"
       />
       <div className="flex justify-between items-center mb-6 max-w-7xl lg:mx-auto mx-3">

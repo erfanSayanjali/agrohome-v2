@@ -3,10 +3,13 @@
 import Title from "../product/Title";
 import Form from "../product/Form.jsx";
 import Rating from "@mui/material/Rating";
+import Skeleton from "@mui/material/Skeleton";
 import { useEffect, useState } from "react";
 import { getBlogComments, submitComment } from "../../../lib/data/stubs";
-import { UseSwal } from "../../../utils/helper.js";
+import { UseSwal, showCommentError } from "../../../utils/helper.js";
 import { IoClose } from "react-icons/io5";
+import Pagination from "../modules/pagination/Pagination";
+import { useQueryManager } from "../../../utils/QueryManager";
 
 const inputs = [
     { value: '', id: 'fullName', placeholder: 'نام و نام خانوادگی', colspan: 1 },
@@ -45,7 +48,7 @@ const CommentItem = ({ name, rate, text, date, replies, order = 1, id }) => {
                                     UseSwal('success', 'نظر شما با موفقیت ثبت شد و پس از تایید منتشر میشود');
                                     setReplay((prev) => ({ ...prev, modal: false }));
                                 } catch (error) {
-                                    UseSwal('error', error.response?.data?.message || error.message || '');
+                                    showCommentError(error);
                                 }
                             }}
                             data={inputs}
@@ -89,27 +92,46 @@ const CommentItem = ({ name, rate, text, date, replies, order = 1, id }) => {
     );
 };
 
+const CommentSkeleton = () => (
+    <div className="bg-[#F1F1F1] p-5 rounded-2xl">
+        <div className="flex items-center justify-between mb-2">
+            <Skeleton variant="text" width={120} height={22} />
+            <Skeleton variant="text" width={80} height={18} />
+        </div>
+        <Skeleton variant="rounded" width={96} height={18} className="mb-3" />
+        <Skeleton variant="text" width="100%" height={18} />
+        <Skeleton variant="text" width="86%" height={18} />
+        <Skeleton variant="text" width="62%" height={18} />
+    </div>
+);
+
 const BlogComments = ({ label, blog_id }) => {
-    const [state, setState] = useState({ comments: [], loading: true, rating: '3', sendLoading: false });
+    const query = useQueryManager();
+    const page = Math.max(1, Number(query.get('page')) || 1);
+    const [state, setState] = useState({ comments: [], loading: true, rating: '3', sendLoading: false, totalPages: 1 });
 
     const loadComments = async () => {
         setState((prev) => ({ ...prev, loading: true }));
         try {
-            const res = await getBlogComments(blog_id);
-            setState((prev) => ({ ...prev, comments: res.content || [] }));
+            const res = await getBlogComments(blog_id, { page, limit: 5 });
+            setState((prev) => ({
+                ...prev,
+                comments: res.content || [],
+                totalPages: res.meta?.totalPages || 1,
+            }));
         } catch (error) {
-            UseSwal('error', error.response?.data || error.message);
+            showCommentError(error, 'بارگذاری نظرات ناموفق بود. لطفاً صفحه را تازه کنید.');
         }
         setState((prev) => ({ ...prev, loading: false }));
     };
 
     useEffect(() => {
         if (!blog_id) {
-            setState((prev) => ({ ...prev, comments: [], loading: false }));
+            setState((prev) => ({ ...prev, comments: [], loading: false, totalPages: 1 }));
             return;
         }
         loadComments();
-    }, [blog_id]);
+    }, [blog_id, page]);
 
     return (
         <div>
@@ -139,7 +161,7 @@ const BlogComments = ({ label, blog_id }) => {
                             await submitComment(sendData);
                             UseSwal('success', 'نظر شما با موفقیت ثبت شد و پس از تایید منتشر میشود');
                         } catch (error) {
-                            UseSwal('error', error.response?.data?.message || error.message || '');
+                            showCommentError(error);
                         } finally {
                             setState((prev) => ({ ...prev, sendLoading: false }));
                         }
@@ -147,7 +169,9 @@ const BlogComments = ({ label, blog_id }) => {
                     data={inputs}
                 />
                 <div className="w-full flex flex-col gap-3">
-                    {state.comments.length ? (
+                    {state.loading ? (
+                        [1, 2, 3].map((item) => <CommentSkeleton key={item} />)
+                    ) : state.comments.length ? (
                         state.comments.map((item) => (
                             <CommentItem
                                 id={item._id || item.id}
@@ -164,6 +188,14 @@ const BlogComments = ({ label, blog_id }) => {
                             بدون نظر
                         </div>
                     )}
+                    {!state.loading && state.totalPages > 1 ? (
+                        <Pagination
+                            className="mt-4"
+                            NextButton="بعدی"
+                            PrevButton="قبلی"
+                            totalPages={state.totalPages}
+                        />
+                    ) : null}
                 </div>
             </div>
         </div>

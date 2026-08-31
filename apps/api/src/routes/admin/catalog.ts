@@ -4,6 +4,10 @@ import { ok, slugify } from "../../lib/helpers";
 import { Fa } from "../../lib/errors";
 import { requireAdmin, requirePermission } from "../../plugins/auth";
 import { normalizeGallery, normalizeMedia } from "../../lib/media";
+import {
+  notifyCatalogLayoutRevalidate,
+  revalidateProductSlugs,
+} from "../../lib/cms-revalidate";
 
 function pick<T extends Record<string, unknown>>(body: T, keys: string[]) {
   const out: Record<string, unknown> = {};
@@ -11,6 +15,12 @@ function pick<T extends Record<string, unknown>>(body: T, keys: string[]) {
     if (body[k] !== undefined) out[k] = body[k];
   }
   return out;
+}
+
+async function revalidateCatalogLayout(app: FastifyInstance) {
+  await notifyCatalogLayoutRevalidate({
+    warn: (obj, msg) => app.log.warn(obj as object, msg),
+  });
 }
 
 export async function adminCatalogRoutes(app: FastifyInstance) {
@@ -33,11 +43,20 @@ export async function adminCatalogRoutes(app: FastifyInstance) {
         throw new Error(Fa.categoryHasChildren);
       }
     },
+    afterCreate: async (instance) => {
+      await revalidateCatalogLayout(instance);
+    },
+    afterUpdate: async (instance) => {
+      await revalidateCatalogLayout(instance);
+    },
+    afterDelete: async (instance) => {
+      await revalidateCatalogLayout(instance);
+    },
   });
 
   app.get(
     "/admin/product-categories-nested",
-    { preHandler: [requireAdmin] },
+    { preHandler: [requirePermission("product_category", "read")] },
     async () => {
       const all = await app.prisma.productCategory.findMany({
         orderBy: [{ sortOrder: "asc" }, { title: "asc" }],
@@ -100,7 +119,6 @@ export async function adminCatalogRoutes(app: FastifyInstance) {
         "isFeatured",
         "status",
         "sortOrder",
-        "views",
       ]);
       if (b.media !== undefined || b.thumbnailUrl !== undefined) {
         data.media = normalizeMedia(b.media ?? b.thumbnailUrl);
@@ -109,6 +127,20 @@ export async function adminCatalogRoutes(app: FastifyInstance) {
         data.gallery = normalizeGallery(b.gallery);
       }
       return data;
+    },
+    afterCreate: async (instance, item) => {
+      await revalidateProductSlugs(instance, [String(item.slug || "")]);
+    },
+    afterUpdate: async (instance, item, previous) => {
+      await revalidateProductSlugs(instance, [
+        String(item.slug || ""),
+        previous ? String(previous.slug || "") : "",
+      ]);
+    },
+    afterDelete: async (instance, previous) => {
+      await revalidateProductSlugs(instance, [
+        previous ? String(previous.slug || "") : "",
+      ]);
     },
   });
 
@@ -163,6 +195,7 @@ export async function adminCatalogRoutes(app: FastifyInstance) {
           tags: { include: { tag: true } },
         },
       });
+      await revalidateProductSlugs(app, [existing.slug, product?.slug]);
       return ok(product);
     }
   );

@@ -1,8 +1,13 @@
 import type { FastifyInstance } from "fastify";
+import { CMS_DEFAULT_REVALIDATE_SECONDS } from "@agrohome/shared";
 import { registerAdminCrud } from "../../lib/crud";
 import { ok } from "../../lib/helpers";
 import { Fa } from "../../lib/errors";
 import { requireAdmin, requirePermission } from "../../plugins/auth";
+import {
+  revalidateCmsPageIds,
+  revalidateCmsPageSlugs,
+} from "../../lib/cms-revalidate";
 
 function pick(body: Record<string, unknown>, keys: string[]) {
   const out: Record<string, unknown> = {};
@@ -10,23 +15,12 @@ function pick(body: Record<string, unknown>, keys: string[]) {
   return out;
 }
 
-async function buildPageSnapshot(app: FastifyInstance, pageId: string) {
-  const blocks = await app.prisma.contentBlock.findMany({
-    where: { pageId, isVisible: true },
-    orderBy: { sortOrder: "asc" },
-  });
-  return {
-    blocks: blocks.map((b) => ({
-      id: b.id,
-      type: b.type,
-      name: b.name,
-      sortOrder: b.sortOrder,
-      sourceType: b.sourceType,
-      payload: b.payload,
-      anchor: b.anchor,
-      isVisible: b.isVisible,
-    })),
-  };
+function asId(value: unknown): string | null {
+  return typeof value === "string" && value ? value : null;
+}
+
+function asSlug(value: unknown): string | null {
+  return typeof value === "string" && value ? value : null;
 }
 
 export async function adminCmsRoutes(app: FastifyInstance) {
@@ -38,15 +32,27 @@ export async function adminCmsRoutes(app: FastifyInstance) {
       slug: b.slug,
       title: b.title,
       status: b.status ?? "draft",
-      revalidateSeconds: b.revalidateSeconds ?? 600,
+      revalidateSeconds: b.revalidateSeconds ?? CMS_DEFAULT_REVALIDATE_SECONDS,
     }),
     mapUpdate: (b) =>
       pick(b, ["slug", "title", "status", "revalidateSeconds"]),
+    afterCreate: async (instance, item) => {
+      await revalidateCmsPageSlugs(instance, [asSlug(item.slug)]);
+    },
+    afterUpdate: async (instance, item, previous) => {
+      await revalidateCmsPageSlugs(instance, [
+        asSlug(previous?.slug),
+        asSlug(item.slug),
+      ]);
+    },
+    afterDelete: async (instance, previous) => {
+      await revalidateCmsPageSlugs(instance, [asSlug(previous?.slug)]);
+    },
   });
 
   app.get(
     "/admin/pages/:id/editor",
-    { preHandler: [requireAdmin] },
+    { preHandler: [requirePermission("cms_page", "read")] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
       const page = await app.prisma.cmsPage.findUnique({
@@ -58,27 +64,6 @@ export async function adminCmsRoutes(app: FastifyInstance) {
       });
       if (!page) return reply.notFound(Fa.notFound);
       return ok(page);
-    }
-  );
-
-  app.post(
-    "/admin/pages/:id/publish",
-    { preHandler: [requirePermission("cms_page", "update")] },
-    async (request, reply) => {
-      const { id } = request.params as { id: string };
-      const page = await app.prisma.cmsPage.findUnique({ where: { id } });
-      if (!page) return reply.notFound(Fa.notFound);
-      const snapshot = await buildPageSnapshot(app, id);
-      const updated = await app.prisma.cmsPage.update({
-        where: { id },
-        data: {
-          status: "published",
-          publishedAt: new Date(),
-          publishedSnapshot: snapshot,
-        },
-        include: { seo: true },
-      });
-      return ok(updated);
     }
   );
 
@@ -107,6 +92,18 @@ export async function adminCmsRoutes(app: FastifyInstance) {
         "payload",
         "anchor",
       ]),
+    afterCreate: async (instance, item) => {
+      await revalidateCmsPageIds(instance, [asId(item.pageId)]);
+    },
+    afterUpdate: async (instance, item, previous) => {
+      await revalidateCmsPageIds(instance, [
+        asId(previous?.pageId),
+        asId(item.pageId),
+      ]);
+    },
+    afterDelete: async (instance, previous) => {
+      await revalidateCmsPageIds(instance, [asId(previous?.pageId)]);
+    },
   });
 
   app.put(
@@ -125,8 +122,15 @@ export async function adminCmsRoutes(app: FastifyInstance) {
           })
         )
       );
+      const blocks = await app.prisma.contentBlock.findMany({
+        where: { id: { in: items.map((item) => item.id) } },
+        select: { pageId: true },
+      });
+      await revalidateCmsPageIds(
+        app,
+        blocks.map((block) => block.pageId)
+      );
       return ok(items);
     }
   );
-
 }

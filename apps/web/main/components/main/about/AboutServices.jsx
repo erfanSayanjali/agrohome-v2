@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { sanitizeHtml } from '../../../utils/sanitize';
 
 const AccordionItem = ({ title, content }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -29,7 +30,7 @@ const AccordionItem = ({ title, content }) => {
         }`}
       >
         {typeof content === 'string' && content.includes('<') ? (
-          <div dangerouslySetInnerHTML={{ __html: content }} />
+          <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(content) }} />
         ) : (
           content
         )}

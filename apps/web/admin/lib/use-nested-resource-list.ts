@@ -14,9 +14,16 @@ import {
   type TreeNode,
 } from "@/lib/tree";
 import type { FilterValue } from "@/lib/table-filters";
+import { withBasePath } from "@/lib/base-path";
 
 type NestedListOptions = {
   enabled?: boolean;
+  /** منبع حقیقت URL — معمولاً از useResourceList / useServerQuery */
+  state: ServerQueryState;
+  setQuery: (
+    patch: Partial<ServerQueryState>,
+    options?: { resetPage?: boolean; scroll?: boolean }
+  ) => void;
 };
 
 function matchesFilters<T extends Record<string, unknown>>(
@@ -26,8 +33,15 @@ function matchesFilters<T extends Record<string, unknown>>(
   for (const [key, value] of Object.entries(filters)) {
     if (value === undefined || value === null || value === "") continue;
     const raw = row[key];
+    if (typeof value === "object" && value !== null && "contains" in value) {
+      const needle = String((value as { contains?: unknown }).contains ?? "")
+        .trim()
+        .toLowerCase();
+      if (!needle) continue;
+      if (!String(raw ?? "").toLowerCase().includes(needle)) return false;
+      continue;
+    }
     if (typeof value === "object" && value !== null && "op" in value) {
-      // column filters are applied loosely on tree lists
       const v = String((value as { value?: unknown }).value ?? "").toLowerCase();
       if (!v) continue;
       if (!String(raw ?? "")
@@ -35,6 +49,11 @@ function matchesFilters<T extends Record<string, unknown>>(
         .includes(v)) {
         return false;
       }
+      continue;
+    }
+    if (value === true || value === false || value === "true" || value === "false") {
+      const want = value === true || value === "true";
+      if (Boolean(raw) !== want) return false;
       continue;
     }
     if (String(raw) !== String(value)) return false;
@@ -64,32 +83,31 @@ function filterTreeByRecordFilters<T extends { id: string }>(
   return walk(nodes);
 }
 
+function collectAllIds<T extends { id: string }>(nodes: TreeNode<T>[]): string[] {
+  const ids: string[] = [];
+  const walk = (list: TreeNode<T>[]) => {
+    for (const node of list) {
+      ids.push(node.id);
+      if (node.children?.length) walk(node.children);
+    }
+  };
+  walk(nodes);
+  return ids;
+}
+
 export function useNestedResourceList<T extends { id: string; title?: string | null; slug?: string | null }>(
   nestedPath: string | null | undefined,
-  options?: NestedListOptions
+  options: NestedListOptions
 ) {
-  const enabled = Boolean(nestedPath) && options?.enabled !== false;
+  const enabled = Boolean(nestedPath) && options.enabled !== false;
+  const { state, setQuery } = options;
   const [tree, setTree] = useState<TreeNode<T>[]>([]);
   const [loading, setLoading] = useState(Boolean(enabled));
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const [state, setState] = useState<ServerQueryState>({
-    page: 1,
-    limit: 1000,
-    search: "",
-    sort: "",
-    filters: {},
-  });
 
   const reload = useCallback(() => setTick((t) => t + 1), []);
-
-  const setQuery = useCallback(
-    (patch: Partial<ServerQueryState>, _opts?: { resetPage?: boolean }) => {
-      setState((prev) => ({ ...prev, ...patch }));
-    },
-    []
-  );
 
   useEffect(() => {
     if (!enabled || !nestedPath) {
@@ -106,13 +124,12 @@ export function useNestedResourceList<T extends { id: string; title?: string | n
         if (cancelled) return;
         const roots = Array.isArray(res.content) ? res.content : [];
         setTree(roots);
-        // expand roots by default for a clear hierarchy glance
         setExpanded(new Set(roots.map((r) => r.id)));
       })
       .catch((err: unknown) => {
         if (cancelled) return;
         if (isUnauthorized(err)) {
-          window.location.href = "/login";
+          window.location.href = withBasePath("/login");
           return;
         }
         setError(err instanceof ApiError ? err.message : "خطا در دریافت درخت");
@@ -134,14 +151,20 @@ export function useNestedResourceList<T extends { id: string; title?: string | n
   }, [tree, state.search, state.filters]);
 
   useEffect(() => {
-    if (!state.search.trim()) return;
+    const hasSearch = Boolean(state.search.trim());
+    const hasFilters = Object.keys(state.filters).length > 0;
+    if (!hasSearch && !hasFilters) return;
     setExpanded((prev) => {
-      const auto = collectExpandIdsForFilter(tree, state.search);
       const merged = new Set(prev);
-      for (const id of auto) merged.add(id);
+      if (hasSearch) {
+        for (const id of collectExpandIdsForFilter(tree, state.search)) merged.add(id);
+      }
+      if (hasFilters) {
+        for (const id of collectAllIds(filteredTree)) merged.add(id);
+      }
       return merged;
     });
-  }, [state.search, tree]);
+  }, [state.search, state.filters, tree, filteredTree]);
 
   const visibleRows: FlatTreeRow<T>[] = useMemo(
     () => flattenVisible(filteredTree, expanded),

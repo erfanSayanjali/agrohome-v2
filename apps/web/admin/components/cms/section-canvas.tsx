@@ -119,7 +119,7 @@ export function SectionCanvas({
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#00160E] to-transparent" />
         <div className="relative z-[1] max-w-xl space-y-3 text-center">
           <Hotspot path="title" selected={sel("title")} onSelect={onSelectPath} label="عنوان">
-            <h2 className="text-2xl font-extrabold sm:text-3xl">
+            <div className="text-2xl font-extrabold sm:text-3xl">
               {parts.length > 1 ? (
                 <>
                   {parts[0]}
@@ -128,6 +128,7 @@ export function SectionCanvas({
                     selected={sel("titleAccent")}
                     onSelect={onSelectPath}
                     label="اکسنت"
+                    as="span"
                     className="inline"
                   >
                     <span style={{ color: str(payload.accentColor, "#B1D082") }}>{accent}</span>
@@ -137,7 +138,7 @@ export function SectionCanvas({
               ) : (
                 title
               )}
-            </h2>
+            </div>
           </Hotspot>
           <Hotspot path="subtitle" selected={sel("subtitle")} onSelect={onSelectPath} label="زیرعنوان">
             <p className="text-sm text-white/90">{str(payload.subtitle)}</p>
@@ -221,7 +222,7 @@ export function SectionCanvas({
         </div>
         <div className="space-y-4">
           <Hotspot path="title" selected={sel("title")} onSelect={onSelectPath} label="عنوان">
-            <p className="text-2xl font-extrabold text-black">
+            <div className="text-2xl font-extrabold text-black">
               {str(payload.title, "یک انتخاب سبز برای")}
               <br />
               <Hotspot
@@ -229,11 +230,12 @@ export function SectionCanvas({
                 selected={sel("titleAccent")}
                 onSelect={onSelectPath}
                 label="اکسنت"
+                as="span"
                 className="inline"
               >
                 <span className="text-[#155038]">{str(payload.titleAccent, "خونه‌های سبز")}</span>
               </Hotspot>
-            </p>
+            </div>
           </Hotspot>
           <Hotspot path="text" selected={sel("text")} onSelect={onSelectPath} label="متن">
             <p className="text-justify text-sm leading-7 text-black/70">
@@ -388,7 +390,7 @@ export function SectionCanvas({
           <div className="absolute inset-0 bg-[#002D1E]/70" />
         </Hotspot>
         <Hotspot path="title" selected={sel("title")} onSelect={onSelectPath} label="عنوان">
-          <p className="relative z-[1] text-xl font-bold md:text-2xl">
+          <div className="relative z-[1] text-xl font-bold md:text-2xl">
             {parts.length > 1 ? (
               <>
                 {parts[0]}
@@ -397,6 +399,7 @@ export function SectionCanvas({
                   selected={sel("titleAccent")}
                   onSelect={onSelectPath}
                   label="اکسنت"
+                  as="span"
                   className="inline"
                 >
                   <span style={{ color: str(payload.accentColor, "#F4C111") }}>{accent}</span>
@@ -406,7 +409,7 @@ export function SectionCanvas({
             ) : (
               title
             )}
-          </p>
+          </div>
         </Hotspot>
       </div>
     );

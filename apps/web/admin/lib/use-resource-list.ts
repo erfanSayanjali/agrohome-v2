@@ -6,6 +6,7 @@ import { apiGet, ApiError, unwrapList } from "@/lib/api";
 import { useServerQuery } from "@/lib/use-server-query";
 import { isUnauthorized } from "@/components/providers/auth-provider";
 import { usePaginationMode } from "@/lib/pagination-mode";
+import { withBasePath } from "@/lib/base-path";
 
 type ListMeta = { page: number; limit: number; totalPages: number };
 
@@ -91,7 +92,7 @@ export function useResourceList<T>(
         .catch((err: unknown) => {
           if (cancelled) return;
           if (isUnauthorized(err)) {
-            window.location.href = "/login";
+            window.location.href = withBasePath("/login");
             return;
           }
           setError(err instanceof ApiError ? err.message : "خطا در دریافت داده");
@@ -161,7 +162,7 @@ export function useResourceList<T>(
       .catch((err: unknown) => {
         if (cancelled) return;
         if (isUnauthorized(err)) {
-          window.location.href = "/login";
+          window.location.href = withBasePath("/login");
           return;
         }
         setError(err instanceof ApiError ? err.message : "خطا در دریافت داده");

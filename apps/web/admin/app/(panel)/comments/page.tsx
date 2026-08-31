@@ -3,11 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Eye, EyeOff, MessageSquareReply } from "lucide-react";
+import { Eye, EyeOff, Home, MessageSquareReply } from "lucide-react";
 import { apiPost, apiPut, ApiError } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CrudResourcePage } from "@/components/data/crud-resource-page";
+import { IconActionButton } from "@/components/ui/icon-action-button";
 import {
   Dialog,
   DialogContent,
@@ -15,7 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+import { FormField } from "@/components/ui/form-field";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 
@@ -24,8 +25,10 @@ type Row = {
   nickName: string;
   content: string;
   publish: boolean;
+  showOnHome: boolean;
   email?: string | null;
   targetType?: string | null;
+  parentId?: string | null;
   productId?: string | null;
   blogId?: string | null;
   product?: { id: string; title?: string } | null;
@@ -39,7 +42,7 @@ const targetLabel: Record<string, string> = {
 };
 
 export default function CommentsPage() {
-  const [replyFor, setReplyFor] = useState<Row | null>(null);
+  const [replyFor, setReplyFor] = useState<{ row: Row; reload: () => void } | null>(null);
   const [replyText, setReplyText] = useState("");
   const [replyName, setReplyName] = useState("آگروهوم");
   const [busy, setBusy] = useState(false);
@@ -48,9 +51,12 @@ export default function CommentsPage() {
     <>
       <CrudResourcePage<Row>
         title="نظرات"
-        description="نظرات محصول و مقاله در یک مدل؛ پیام‌های فرم تماس جداگانه در «پیام‌های تماس» هستند."
+        description="نظرات ریشه و پاسخ‌ها به‌صورت درختی؛ پیام‌های فرم تماس جداگانه در «پیام‌های تماس» هستند."
         path="/admin/comments"
+        nested={{ nestedPath: "/admin/comments-nested", treeColumnKey: "nick" }}
         searchPlaceholder="متن یا نام…"
+        disableCreate
+        disableEdit
         filters={[
           {
             key: "publish",
@@ -58,6 +64,14 @@ export default function CommentsPage() {
             options: [
               { value: "true", label: "منتشر شده" },
               { value: "false", label: "در انتظار" },
+            ],
+          },
+          {
+            key: "showOnHome",
+            label: "صفحه اصلی",
+            options: [
+              { value: "true", label: "بله" },
+              { value: "false", label: "خیر" },
             ],
           },
           {
@@ -112,69 +126,19 @@ export default function CommentsPage() {
               </Badge>
             ),
           },
-        ]}
-        fields={[
-          { name: "nickName", label: "نام", required: true },
-          { name: "content", label: "متن", type: "textarea", required: true },
-          { name: "email", label: "ایمیل", dir: "ltr" },
-          { name: "publish", label: "منتشر", type: "switch" },
           {
-            name: "targetType",
-            label: "هدف",
-            type: "select",
-            options: [
-              { value: "product", label: "محصول" },
-              { value: "blog", label: "وبلاگ" },
-              { value: "comment", label: "پاسخ" },
-            ],
-          },
-          {
-            name: "productId",
-            label: "محصول",
-            type: "async-select",
-            placeholder: "انتخاب محصول…",
-            asyncSelect: {
-              path: "/admin/products",
-              mapItem: (item) => ({
-                value: String(item.id),
-                label: String(item.title || item.id),
-                meta: item.slug ? String(item.slug) : undefined,
-              }),
-              allowClear: true,
-              searchPlaceholder: "نام محصول…",
-            },
-          },
-          {
-            name: "blogId",
-            label: "وبلاگ",
-            type: "async-select",
-            placeholder: "انتخاب مطلب…",
-            asyncSelect: {
-              path: "/admin/blogs",
-              mapItem: (item) => ({
-                value: String(item.id),
-                label: String(item.title || item.id),
-                meta: item.slug ? String(item.slug) : undefined,
-              }),
-              allowClear: true,
-              searchPlaceholder: "عنوان مطلب…",
-            },
+            key: "home",
+            header: "صفحه اصلی",
+            filter: { key: "showOnHome", type: "boolean" },
+            cell: (r) =>
+              r.showOnHome ? <Badge variant="accent">بله</Badge> : "—",
           },
         ]}
-        createDefaults={{ publish: false, targetType: "product" }}
-        mapFormToBody={(v) => ({
-          ...v,
-          publish: v.publish === true || v.publish === "true",
-          productId: v.productId || null,
-          blogId: v.blogId || null,
-        })}
+        fields={[]}
         extraActions={(row, reload) => (
           <>
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              aria-label={row.publish ? "لغو انتشار" : "انتشار"}
+            <IconActionButton
+              tooltip={row.publish ? "لغو انتشار" : "انتشار"}
               onClick={async () => {
                 try {
                   await apiPut(`/admin/comments/${row.id}`, { publish: !row.publish });
@@ -186,19 +150,36 @@ export default function CommentsPage() {
               }}
             >
               {row.publish ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </Button>
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              aria-label="پاسخ"
+            </IconActionButton>
+            <IconActionButton
+              tooltip={row.showOnHome ? "حذف از صفحه اصلی" : "نمایش در صفحه اصلی"}
+              onClick={async () => {
+                try {
+                  await apiPut(`/admin/comments/${row.id}`, {
+                    showOnHome: !row.showOnHome,
+                  });
+                  toast.success(
+                    row.showOnHome ? "از صفحه اصلی حذف شد" : "در صفحه اصلی نمایش داده می‌شود"
+                  );
+                  reload();
+                } catch (err) {
+                  toast.error(err instanceof ApiError ? err.message : "خطا");
+                }
+              }}
+            >
+              <Home
+                className={`h-4 w-4 ${row.showOnHome ? "text-[var(--admin-accent)]" : ""}`}
+              />
+            </IconActionButton>
+            <IconActionButton
+              tooltip="پاسخ"
               onClick={() => {
-                setReplyFor(row);
+                setReplyFor({ row, reload });
                 setReplyText("");
               }}
             >
               <MessageSquareReply className="h-4 w-4" />
-            </Button>
+            </IconActionButton>
           </>
         )}
       />
@@ -209,14 +190,12 @@ export default function CommentsPage() {
             <DialogTitle>پاسخ به نظر</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <div className="space-y-2">
-              <Label>نام پاسخ‌دهنده</Label>
+            <FormField label="نام پاسخ‌دهنده">
               <Input value={replyName} onChange={(e) => setReplyName(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>متن پاسخ</Label>
+            </FormField>
+            <FormField label="متن پاسخ">
               <Textarea value={replyText} onChange={(e) => setReplyText(e.target.value)} />
-            </div>
+            </FormField>
           </div>
           <DialogFooter>
             <Button type="button" variant="secondary" onClick={() => setReplyFor(null)}>
@@ -229,11 +208,12 @@ export default function CommentsPage() {
                 if (!replyFor) return;
                 setBusy(true);
                 try {
-                  await apiPost(`/admin/comments/${replyFor.id}/reply`, {
+                  await apiPost(`/admin/comments/${replyFor.row.id}/reply`, {
                     content: replyText,
                     nickName: replyName,
                   });
                   toast.success("پاسخ ثبت شد");
+                  replyFor.reload();
                   setReplyFor(null);
                 } catch (err) {
                   toast.error(err instanceof ApiError ? err.message : "خطا");

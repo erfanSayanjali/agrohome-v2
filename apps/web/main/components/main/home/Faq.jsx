@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { useState } from 'react';
 import { IoIosArrowDown } from "react-icons/io";
 import { mediaUrl } from '../../../lib/data/stubs';
+import { sanitizeHtml } from '../../../utils/sanitize';
 
 const FaqItem = ({q , a , _id})=>{
     const [active , setActive] = useState('')
@@ -16,7 +17,7 @@ const FaqItem = ({q , a , _id})=>{
 
                 <IoIosArrowDown className={`${active === _id ? 'rotate-180':''} transition-all`} fontSize={20} />
             </p>
-            <div dangerouslySetInnerHTML={{__html:a}} className={` ${active === _id ?'opacity-100 h-[1000px] p-3' :'opacity-0 h-0 invisible '} max-h-fit  text-justify transition-all ext-sm text-white`}>
+            <div dangerouslySetInnerHTML={{__html: sanitizeHtml(a)}} className={` ${active === _id ?'opacity-100 h-[1000px] p-3' :'opacity-0 h-0 invisible '} max-h-fit  text-justify transition-all ext-sm text-white`}>
                 
             </div>
         </div>
@@ -32,7 +33,7 @@ const Faq = ({faq, cms} = {}) => {
       .filter(Boolean);
 
     return (
-        <div className='w-full bg-[#123833] bg-[url("/faqh.png")] '>
+        <div className='w-full overflow-x-clip bg-[#123833] bg-[url("/faqh.png")] '>
             <div className='max-w-7xl flex lg:flex-row flex-col lg:mx-auto mx-3 lg:p-20 p-10 px-0'>
                 <div className='text-center mb-2 lg:hidden'>
                 <p className='text-[#F3CC30]'>
@@ -40,7 +41,7 @@ const Faq = ({faq, cms} = {}) => {
                 </p>
                 <p className='text-xl font-extrabold text-white mt-2'>{title}</p>
                 </div>
-                  <div className='lg:w-[520px] w-[320px] flex overflow-hidden items-center justify-center w-full h-[300px] relative'>
+                  <div className='lg:w-[520px] w-full max-w-[320px] mx-auto flex overflow-hidden items-center justify-center h-[300px] relative'>
                     <Image className='rounded-2xl lg:w-[300px]  h-[300px] object-cover' src={images[0]} alt='faq1' width={500} height={200} unoptimized={String(images[0]).includes('/uploads/')}/>
                     <Image className='lg:translate-x-21 translate-x-16 rounded-2xl lg:w-[250px] h-[250px] object-cover' src={images[1] || images[0]} alt='faq2' width={400} height={200} unoptimized={String(images[1] || images[0]).includes('/uploads/')}/>
                   </div>

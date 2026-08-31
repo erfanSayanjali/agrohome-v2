@@ -1,27 +1,157 @@
-import { createWriteStream } from "node:fs";
-import { mkdir } from "node:fs/promises";
+import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { pipeline } from "node:stream/promises";
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { registerAdminCrud } from "../../lib/crud";
 import { hashPassword } from "../../lib/auth";
-import { ok, okList, parseListQuery, prismaOrderBy } from "../../lib/helpers";
+import { ok, okList, parseListQuery, prismaOrderBy, isIranMobile } from "../../lib/helpers";
 import { Fa, mapPrismaError } from "../../lib/errors";
+import {
+  assertCanAssignRole,
+  assertCanMutateRolePermissions,
+} from "../../lib/rbac-guards";
+import {
+  assertSafeMediaUrl,
+  UploadValidationError,
+  validateUploadedFileBuffer,
+} from "../../lib/upload-validation";
+import {
+  sanitizeFooterLinkGroups,
+  sanitizeHeaderLinks,
+  sanitizeSocialLinks,
+} from "../../lib/site-settings";
 import {
   allUsedUrls,
   buildMediaUsageIndex,
+  compactMediaUsages,
+  invalidateMediaUsageIndex,
   isMediaUsageEntityType,
   normalizeMediaUrl,
   urlsForEntityType,
   type MediaUsage,
 } from "../../lib/media-usage";
 import { requireAdmin, requirePermission } from "../../plugins/auth";
+import {
+  notifyCatalogLayoutRevalidate,
+  revalidateCmsPageIds,
+} from "../../lib/cms-revalidate";
 
 function pick(body: Record<string, unknown>, keys: string[]) {
   const out: Record<string, unknown> = {};
   for (const k of keys) if (body[k] !== undefined) out[k] = body[k];
   return out;
 }
+
+type UserWithRole = {
+  id: string;
+  phone: string;
+  firstName: string | null;
+  lastName: string | null;
+  nickname: string | null;
+  media: unknown;
+  roleId: string | null;
+  role: { id: string; title: string } | null;
+  passwordHash: string | null;
+  createdAt: Date;
+};
+
+function sanitizeUser(u: UserWithRole) {
+  return {
+    id: u.id,
+    phone: u.phone,
+    firstName: u.firstName,
+    lastName: u.lastName,
+    nickname: u.nickname,
+    media: u.media,
+    roleId: u.roleId,
+    role: u.role,
+    hasPassword: Boolean(u.passwordHash),
+    createdAt: u.createdAt,
+  };
+}
+
+async function countAdmins(app: FastifyInstance) {
+  return app.prisma.user.count({ where: { roleId: { not: null } } });
+}
+
+async function guardRolePermissions(
+  request: FastifyRequest,
+  body: Record<string, unknown>,
+  reply: FastifyReply
+): Promise<boolean> {
+  const permissions = body.permissions ?? [];
+  const check = assertCanMutateRolePermissions(
+    request.user?.role?.permissions,
+    permissions
+  );
+  if (!check.ok) {
+    reply.forbidden(check.message);
+    return false;
+  }
+  return true;
+}
+
+function parseUserBody(body: Record<string, unknown>) {
+  const phone = typeof body.phone === "string" ? body.phone.trim() : undefined;
+  const firstName =
+    body.firstName === null || body.firstName === undefined
+      ? body.firstName
+      : String(body.firstName);
+  const lastName =
+    body.lastName === null || body.lastName === undefined
+      ? body.lastName
+      : String(body.lastName);
+  const nickname =
+    body.nickname === null || body.nickname === undefined
+      ? body.nickname
+      : String(body.nickname);
+  const roleId =
+    body.roleId === null || body.roleId === undefined || body.roleId === ""
+      ? null
+      : String(body.roleId);
+  const password = typeof body.password === "string" ? body.password : undefined;
+  return { phone, firstName, lastName, nickname, roleId, password };
+}
+
+const DEFAULT_HEADER_LINKS = [
+  { title: "صفحه اصلی", href: "/" },
+  { title: "محصولات", href: "/products" },
+  { title: "وبلاگ", href: "/blogs" },
+  { title: "درباره ما", href: "/about" },
+  { title: "تماس با ما", href: "/contact" },
+];
+
+const DEFAULT_SITE_SETTINGS = {
+  id: "default",
+  logoUrl: "/logo.png",
+  faviconUrl: "/favicon.ico",
+  footerText:
+    "با کودهای ارگانیک آگروهوم، بدون بوی بد و مواد شیمیایی، گیاهانت را زنده نگه دار.",
+  socialLinks: [
+    { label: "اینستاگرام", href: "https://www.instagram.com/agrohome" },
+    { label: "تلگرام", href: "https://t.me/agrohome" },
+  ],
+  headerLinks: DEFAULT_HEADER_LINKS,
+  footerLinkGroups: [
+    {
+      title: "دسترسی سریع",
+      links: [
+        { title: "صفحه اصلی", href: "/" },
+        { title: "کودهای خانگی", href: "/products" },
+        { title: "وبلاگ", href: "/blogs" },
+        { title: "درباره ما", href: "/about" },
+        { title: "تماس با ما", href: "/contact" },
+      ],
+    },
+    {
+      title: "فروشگاه",
+      links: [
+        { title: "همه محصولات", href: "/products" },
+        { title: "مقالات و راهنما", href: "/blogs" },
+        { title: "تماس با پشتیبانی", href: "/contact" },
+      ],
+    },
+  ],
+};
 
 export async function adminMiscRoutes(app: FastifyInstance, uploadsDir: string) {
   // Lightweight dashboard counters — register early (no CRUD path conflict)
@@ -90,7 +220,7 @@ export async function adminMiscRoutes(app: FastifyInstance, uploadsDir: string) 
   }
 
   // قبل از CRUD تا با /:id تداخل نداشته باشد
-  app.get("/admin/seo/by-target", { preHandler: [requireAdmin] }, async (request, reply) => {
+  app.get("/admin/seo/by-target", { preHandler: [requirePermission("seo", "read")] }, async (request, reply) => {
     const q = request.query as {
       targetType?: string;
       targetId?: string;
@@ -111,7 +241,7 @@ export async function adminMiscRoutes(app: FastifyInstance, uploadsDir: string) 
 
   app.put(
     "/admin/seo/upsert",
-    { preHandler: [requireAdmin] },
+    { preHandler: [requirePermission("seo", "update")] },
     async (request, reply) => {
       try {
         const body = (request.body ?? {}) as Record<string, unknown>;
@@ -145,6 +275,7 @@ export async function adminMiscRoutes(app: FastifyInstance, uploadsDir: string) 
             where: { id: existing.id },
             data,
           });
+          await revalidateCmsPageIds(app, [pageId ?? existing.pageId]);
           return ok(updated);
         }
 
@@ -156,6 +287,7 @@ export async function adminMiscRoutes(app: FastifyInstance, uploadsDir: string) 
             pageId,
           },
         });
+        await revalidateCmsPageIds(app, [pageId ?? created.pageId]);
         return ok(created);
       } catch (err) {
         const mapped = mapPrismaError(err);
@@ -178,7 +310,7 @@ export async function adminMiscRoutes(app: FastifyInstance, uploadsDir: string) 
   });
 
   // لیست سفارشی با فیلتر usedBy و غنی‌سازی usages
-  app.get("/admin/media", { preHandler: [requireAdmin] }, async (request) => {
+  app.get("/admin/media", { preHandler: [requirePermission("media", "read")] }, async (request) => {
     const q = parseListQuery(request.query as Record<string, unknown>);
     const filters = { ...q.filters };
     const usedByRaw = filters.usedBy;
@@ -217,7 +349,7 @@ export async function adminMiscRoutes(app: FastifyInstance, uploadsDir: string) 
 
     const content = rows.map((row) => {
       const key = normalizeMediaUrl(row.url) ?? row.url;
-      const usages: MediaUsage[] = usageIndex.get(key) ?? [];
+      const usages: MediaUsage[] = compactMediaUsages(usageIndex.get(key) ?? []);
       return { ...row, usages };
     });
 
@@ -234,6 +366,13 @@ export async function adminMiscRoutes(app: FastifyInstance, uploadsDir: string) 
         if (typeof data.url !== "string" || !data.url) {
           return reply.badRequest(Fa.badRequest);
         }
+        try {
+          assertSafeMediaUrl(data.url);
+        } catch (err) {
+          const message =
+            err instanceof UploadValidationError ? err.message : Fa.badRequest;
+          return reply.badRequest(message);
+        }
         const item = await app.prisma.media.create({
           data: data as {
             url: string;
@@ -244,6 +383,7 @@ export async function adminMiscRoutes(app: FastifyInstance, uploadsDir: string) 
             size?: number;
           },
         });
+        invalidateMediaUsageIndex();
         return ok(item);
       } catch (err) {
         const mapped = mapPrismaError(err);
@@ -266,38 +406,52 @@ export async function adminMiscRoutes(app: FastifyInstance, uploadsDir: string) 
     async (request, reply) => {
       const file = await request.file();
       if (!file) return reply.badRequest(Fa.fileRequired);
-      await mkdir(uploadsDir, { recursive: true });
-      const safeName = `${Date.now()}-${file.filename.replace(/[^\w.\-]+/g, "_")}`;
-      const dest = path.join(uploadsDir, safeName);
-      await pipeline(file.file, createWriteStream(dest));
-      const fields = file.fields as Record<string, { value?: string } | undefined>;
-      const altFromField = fields?.alt?.value;
-      const url = `/uploads/${safeName}`;
-      const media = await app.prisma.media.create({
-        data: {
-          url,
-          name: file.filename,
-          alt: altFromField || file.filename,
-          mimeType: file.mimetype,
-          type: file.mimetype.startsWith("image/")
-            ? "image"
-            : file.mimetype.startsWith("video/")
-              ? "video"
-              : "file",
-          size: undefined,
-        },
-      });
-      return ok(media);
+      try {
+        const buffer = await file.toBuffer();
+        const { mime, ext } = await validateUploadedFileBuffer(
+          buffer,
+          file.filename
+        );
+        await mkdir(uploadsDir, { recursive: true });
+        const baseName = path.basename(file.filename).replace(/[^\w.\-]+/g, "_");
+        const safeName = `${Date.now()}-${baseName.replace(/\.[^.]+$/, "")}${ext}`;
+        const dest = path.join(uploadsDir, safeName);
+        await writeFile(dest, buffer);
+        const fields = file.fields as Record<string, { value?: string } | undefined>;
+        const altFromField = fields?.alt?.value;
+        const url = `/uploads/${safeName}`;
+        const media = await app.prisma.media.create({
+          data: {
+            url,
+            name: file.filename,
+            alt: altFromField || file.filename,
+            mimeType: mime,
+            type: mime.startsWith("image/")
+              ? "image"
+              : mime.startsWith("video/")
+                ? "video"
+                : "file",
+            size: buffer.length,
+          },
+        });
+        invalidateMediaUsageIndex();
+        return ok(media);
+      } catch (err) {
+        if (err instanceof UploadValidationError) {
+          return reply.badRequest(err.message);
+        }
+        throw err;
+      }
     }
   );
 
-  app.get("/admin/media/:id", { preHandler: [requireAdmin] }, async (request, reply) => {
+  app.get("/admin/media/:id", { preHandler: [requirePermission("media", "read")] }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const item = await app.prisma.media.findUnique({ where: { id } });
     if (!item) return reply.notFound(Fa.notFound);
     const usageIndex = await buildMediaUsageIndex(app.prisma);
     const key = normalizeMediaUrl(item.url) ?? item.url;
-    return ok({ ...item, usages: usageIndex.get(key) ?? [] });
+    return ok({ ...item, usages: compactMediaUsages(usageIndex.get(key) ?? []) });
   });
 
   app.put(
@@ -307,6 +461,15 @@ export async function adminMiscRoutes(app: FastifyInstance, uploadsDir: string) 
       const { id } = request.params as { id: string };
       const body = (request.body ?? {}) as Record<string, unknown>;
       const data = pick(body, ["url", "type", "name", "alt", "mimeType", "size"]);
+      if (typeof data.url === "string" && data.url) {
+        try {
+          assertSafeMediaUrl(data.url);
+        } catch (err) {
+          const message =
+            err instanceof UploadValidationError ? err.message : Fa.badRequest;
+          return reply.badRequest(message);
+        }
+      }
       try {
         const item = await app.prisma.media.update({
           where: { id },
@@ -319,6 +482,7 @@ export async function adminMiscRoutes(app: FastifyInstance, uploadsDir: string) 
             size?: number;
           },
         });
+        invalidateMediaUsageIndex();
         return ok(item);
       } catch (err) {
         const mapped = mapPrismaError(err);
@@ -339,8 +503,28 @@ export async function adminMiscRoutes(app: FastifyInstance, uploadsDir: string) 
     { preHandler: [requirePermission("media", "delete")] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      const item = await app.prisma.media.findUnique({ where: { id } });
+      if (!item) return reply.notFound(Fa.notFound);
+
+      const usageIndex = await buildMediaUsageIndex(app.prisma, { fresh: true });
+      const key = normalizeMediaUrl(item.url) ?? item.url;
+      const usages = compactMediaUsages(usageIndex.get(key) ?? []);
+      if (usages.length) {
+        return reply.status(409).send({
+          statusCode: 409,
+          error: "Conflict",
+          message: Fa.mediaInUse,
+          usages,
+        });
+      }
+
       try {
         await app.prisma.media.delete({ where: { id } });
+        invalidateMediaUsageIndex();
+        if (item.url.startsWith("/uploads/")) {
+          const filePath = path.join(uploadsDir, path.basename(item.url));
+          await unlink(filePath).catch(() => undefined);
+        }
         return ok({ id });
       } catch (err) {
         const mapped = mapPrismaError(err);
@@ -359,6 +543,8 @@ export async function adminMiscRoutes(app: FastifyInstance, uploadsDir: string) 
   registerAdminCrud(app, "roles", "role", {
     entity: "role",
     searchFields: ["title"],
+    beforeCreate: guardRolePermissions,
+    beforeUpdate: guardRolePermissions,
     mapCreate: (b) => ({
       title: b.title,
       permissions: b.permissions ?? [],
@@ -366,7 +552,7 @@ export async function adminMiscRoutes(app: FastifyInstance, uploadsDir: string) 
     mapUpdate: (b) => pick(b, ["title", "permissions"]),
   });
 
-  app.get("/admin/users", { preHandler: [requireAdmin] }, async (request) => {
+  app.get("/admin/users", { preHandler: [requirePermission("user", "read")] }, async (request) => {
     const q = parseListQuery(request.query as Record<string, unknown>);
     const where: Record<string, unknown> = { ...q.filters };
     if (q.search) {
@@ -388,42 +574,161 @@ export async function adminMiscRoutes(app: FastifyInstance, uploadsDir: string) 
       take: q.limit,
     });
     return okList(
-      users.map((u) => ({
-        id: u.id,
-        phone: u.phone,
-        firstName: u.firstName,
-        lastName: u.lastName,
-        nickname: u.nickname,
-        media: u.media,
-        roleId: u.roleId,
-        role: u.role,
-        hasPassword: Boolean(u.passwordHash),
-        createdAt: u.createdAt,
-      })),
+      users.map((u) => sanitizeUser(u as UserWithRole)),
       total,
       q.page,
       q.limit
     );
   });
 
+  app.get("/admin/users/:id", { preHandler: [requirePermission("user", "read")] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const user = await app.prisma.user.findUnique({
+      where: { id },
+      include: { role: true },
+    });
+    if (!user) return reply.notFound(Fa.userNotFound);
+    return ok(sanitizeUser(user as UserWithRole));
+  });
+
   app.post(
-    "/admin/users/:id/assign-role",
+    "/admin/users",
+    { preHandler: [requirePermission("user", "create")] },
+    async (request, reply) => {
+      const body = (request.body ?? {}) as Record<string, unknown>;
+      const { phone, firstName, lastName, nickname, roleId, password } = parseUserBody(body);
+      if (!phone) return reply.badRequest(Fa.phoneRequired);
+      if (!isIranMobile(phone)) return reply.badRequest(Fa.invalidPhone);
+      if (!password || password.length < 6) {
+        return reply.badRequest(Fa.passwordMinLength);
+      }
+      if (roleId) {
+        const role = await app.prisma.role.findUnique({ where: { id: roleId } });
+        if (!role) return reply.badRequest(Fa.foreignKey);
+        const assignCheck = assertCanAssignRole(request.user?.role?.permissions);
+        if (!assignCheck.ok) return reply.forbidden(assignCheck.message);
+      }
+      try {
+        const passwordHash = await hashPassword(password);
+        const user = await app.prisma.user.create({
+          data: {
+            phone,
+            firstName: (firstName as string | null | undefined) ?? null,
+            lastName: (lastName as string | null | undefined) ?? null,
+            nickname: (nickname as string | null | undefined) ?? null,
+            roleId,
+            passwordHash,
+          },
+          include: { role: true },
+        });
+        return ok(sanitizeUser(user as UserWithRole));
+      } catch (err) {
+        const mapped = mapPrismaError(err);
+        if (mapped) {
+          return reply.status(mapped.statusCode).send({
+            statusCode: mapped.statusCode,
+            error: mapped.statusCode === 409 ? "Conflict" : "Bad Request",
+            message: mapped.message,
+          });
+        }
+        app.log.error(err);
+        return reply.internalServerError(Fa.createFailed);
+      }
+    }
+  );
+
+  app.put(
+    "/admin/users/:id",
     { preHandler: [requirePermission("user", "update")] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
-      const { roleId } = (request.body ?? {}) as { roleId?: string };
-      if (!roleId) return reply.badRequest(Fa.roleIdRequired);
+      const body = (request.body ?? {}) as Record<string, unknown>;
+      const existing = await app.prisma.user.findUnique({ where: { id } });
+      if (!existing) return reply.notFound(Fa.userNotFound);
+
+      const { phone, firstName, lastName, nickname, roleId, password } = parseUserBody(body);
+      const data: Record<string, unknown> = {};
+
+      if (phone !== undefined) {
+        if (!phone) return reply.badRequest(Fa.phoneRequired);
+        if (!isIranMobile(phone)) return reply.badRequest(Fa.invalidPhone);
+        data.phone = phone;
+      }
+      if (firstName !== undefined) data.firstName = (firstName as string | null) ?? null;
+      if (lastName !== undefined) data.lastName = (lastName as string | null) ?? null;
+      if (nickname !== undefined) data.nickname = (nickname as string | null) ?? null;
+      if (roleId !== undefined) {
+        const assignCheck = assertCanAssignRole(request.user?.role?.permissions);
+        if (!assignCheck.ok) return reply.forbidden(assignCheck.message);
+        if (roleId) {
+          const role = await app.prisma.role.findUnique({ where: { id: roleId } });
+          if (!role) return reply.badRequest(Fa.foreignKey);
+        }
+        if (existing.roleId && !roleId) {
+          const adminCount = await countAdmins(app);
+          if (adminCount <= 1) {
+            return reply.badRequest(Fa.lastAdminCannotDelete);
+          }
+        }
+        data.roleId = roleId;
+      }
+      if (password) {
+        if (password.length < 6) return reply.badRequest(Fa.passwordMinLength);
+        data.passwordHash = await hashPassword(password);
+      }
+
+      try {
+        const user = await app.prisma.user.update({
+          where: { id },
+          data,
+          include: { role: true },
+        });
+        return ok(sanitizeUser(user as UserWithRole));
+      } catch (err) {
+        const mapped = mapPrismaError(err);
+        if (mapped) {
+          return reply.status(mapped.statusCode).send({
+            statusCode: mapped.statusCode,
+            error: mapped.statusCode === 409 ? "Conflict" : "Bad Request",
+            message: mapped.message,
+          });
+        }
+        return reply.notFound(Fa.recordNotFound);
+      }
+    }
+  );
+
+  app.delete(
+    "/admin/users/:id",
+    { preHandler: [requirePermission("user", "delete")] },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
       const user = await app.prisma.user.findUnique({ where: { id } });
       if (!user) return reply.notFound(Fa.userNotFound);
-      if (user.roleId) {
-        return reply.badRequest(Fa.userAlreadyHasRole);
+
+      try {
+        await app.prisma.$transaction(async (tx) => {
+          if (user.roleId) {
+            const adminCount = await tx.user.count({
+              where: { roleId: { not: null } },
+            });
+            if (adminCount <= 1) {
+              throw new Error("LAST_ADMIN");
+            }
+          }
+          await tx.blog.updateMany({
+            where: { authorId: id },
+            data: { authorId: null },
+          });
+          await tx.user.delete({ where: { id } });
+        });
+      } catch (err) {
+        if (err instanceof Error && err.message === "LAST_ADMIN") {
+          return reply.badRequest(Fa.lastAdminCannotDelete);
+        }
+        throw err;
       }
-      const updated = await app.prisma.user.update({
-        where: { id },
-        data: { roleId },
-        include: { role: true },
-      });
-      return ok(updated);
+      return ok({ id });
     }
   );
 
@@ -454,48 +759,16 @@ export async function adminMiscRoutes(app: FastifyInstance, uploadsDir: string) 
       pick(b, ["fullName", "subject", "email", "phone", "message", "status"]),
   });
 
-  app.get("/admin/site-settings", { preHandler: [requireAdmin] }, async () => {
+  app.get("/admin/site-settings", { preHandler: [requirePermission("site_settings", "read")] }, async () => {
     const settings = await app.prisma.siteSettings.findUnique({
       where: { id: "default" },
     });
-    return ok(
-      settings ?? {
-        id: "default",
-        logoUrl: "/logo.png",
-        faviconUrl: "/favicon.ico",
-        footerText:
-          "با کودهای ارگانیک آگروهوم، بدون بوی بد و مواد شیمیایی، گیاهانت را زنده نگه دار.",
-        socialLinks: [
-          { label: "اینستاگرام", href: "https://www.instagram.com/agrohome" },
-          { label: "تلگرام", href: "https://t.me/agrohome" },
-        ],
-        footerLinkGroups: [
-          {
-            title: "دسترسی سریع",
-            links: [
-              { title: "صفحه اصلی", href: "/" },
-              { title: "کودهای خانگی", href: "/products" },
-              { title: "وبلاگ", href: "/blogs" },
-              { title: "درباره ما", href: "/about" },
-              { title: "تماس با ما", href: "/contact" },
-            ],
-          },
-          {
-            title: "فروشگاه",
-            links: [
-              { title: "همه محصولات", href: "/products" },
-              { title: "مقالات و راهنما", href: "/blogs" },
-              { title: "تماس با پشتیبانی", href: "/contact" },
-            ],
-          },
-        ],
-      }
-    );
+    return ok(settings ?? DEFAULT_SITE_SETTINGS);
   });
 
   app.put(
     "/admin/site-settings",
-    { preHandler: [requireAdmin] },
+    { preHandler: [requirePermission("site_settings", "update")] },
     async (request) => {
       const body = (request.body ?? {}) as Record<string, unknown>;
       const data = {
@@ -509,15 +782,17 @@ export async function adminMiscRoutes(app: FastifyInstance, uploadsDir: string) 
             : null,
         footerText:
           typeof body.footerText === "string" ? body.footerText : null,
-        socialLinks: Array.isArray(body.socialLinks) ? body.socialLinks : [],
-        footerLinkGroups: Array.isArray(body.footerLinkGroups)
-          ? body.footerLinkGroups
-          : [],
+        socialLinks: sanitizeSocialLinks(body.socialLinks),
+        headerLinks: sanitizeHeaderLinks(body.headerLinks),
+        footerLinkGroups: sanitizeFooterLinkGroups(body.footerLinkGroups),
       };
       const updated = await app.prisma.siteSettings.upsert({
         where: { id: "default" },
         create: { id: "default", ...data },
         update: data,
+      });
+      void notifyCatalogLayoutRevalidate({
+        warn: (obj, msg) => app.log.warn(obj as object, msg),
       });
       return ok(updated);
     }

@@ -14,6 +14,8 @@ const buttonVariants = cva(
         ghost: "hover:bg-white/5 text-[var(--admin-text)]",
         outline:
           "border border-[var(--admin-border)] bg-transparent hover:border-[var(--admin-border-strong)]",
+        field:
+          "border border-[var(--admin-border)] bg-[var(--admin-bg-elevated)] font-normal text-[var(--admin-text)] hover:border-[var(--admin-border-strong)] hover:bg-[var(--admin-bg-elevated)]",
         danger: "bg-[var(--admin-danger)] text-white hover:brightness-110",
         link: "text-[var(--admin-accent)] underline-offset-4 hover:underline",
       },

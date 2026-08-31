@@ -16,6 +16,23 @@ import { adminCmsRoutes } from "./routes/admin/cms";
 import { adminMiscRoutes } from "./routes/admin/misc";
 import { publicRoutes } from "./routes/public/index";
 
+function resolveCorsOrigin():
+  | boolean
+  | string
+  | RegExp
+  | (string | RegExp)[]
+  | ((origin: string | undefined, cb: (err: Error | null, allow: boolean) => void) => void) {
+  const raw = process.env.CORS_ORIGINS?.trim();
+  if (raw) {
+    const origins = raw.split(",").map((item) => item.trim()).filter(Boolean);
+    if (origins.length === 1) return origins[0]!;
+    return origins;
+  }
+  if (process.env.NODE_ENV !== "production") return true;
+  const main = process.env.MAIN_SITE_URL?.trim();
+  return main ? [main] : false;
+}
+
 export async function buildApp(
   app: FastifyInstance,
   options: { rootDir: string }
@@ -24,7 +41,7 @@ export async function buildApp(
   await mkdir(uploadsDir, { recursive: true });
 
   await app.register(cors, {
-    origin: true,
+    origin: resolveCorsOrigin(),
     credentials: true,
   });
   await app.register(sensible);
@@ -36,6 +53,11 @@ export async function buildApp(
     root: uploadsDir,
     prefix: "/uploads/",
     decorateReply: false,
+    setHeaders(res, filePath) {
+      void filePath;
+      res.raw.setHeader("X-Content-Type-Options", "nosniff");
+      res.raw.setHeader("Content-Disposition", "inline");
+    },
   });
 
   await app.register(healthRoutes);

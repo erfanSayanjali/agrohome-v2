@@ -25,14 +25,19 @@ export function formatFaNumber(
 /** مسیر آپلود / MediaRef را به URL قابل‌نمایش در ادمین تبدیل می‌کند */
 export function mediaUrl(path?: string | null | { url?: string | null }): string {
   const raw =
-    path && typeof path === "object" && "url" in path ? path.url : path;
+    typeof path === "string"
+      ? path
+      : path && typeof path === "object" && typeof path.url === "string"
+        ? path.url
+        : null;
   if (!raw) return "";
   if (raw.startsWith("http://") || raw.startsWith("https://") || raw.startsWith("data:")) {
     return raw;
   }
   const normalized = raw.startsWith("/") ? raw : `/${raw}`;
   if (!normalized.startsWith("/uploads/")) return normalized;
-  const base =
-    process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || "http://localhost:3002";
-  return `${base.replace(/\/$/, "")}${normalized}`;
+  // Same-origin (/uploads rewrite or edge proxy); absolute API only if explicitly set for the browser
+  const publicBase = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "";
+  if (publicBase) return `${publicBase}${normalized}`;
+  return normalized;
 }

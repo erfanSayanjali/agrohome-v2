@@ -1,5 +1,14 @@
 /** Fetch CMS pages (live page-builder blocks) and resolve entity queries. */
 
+import { unstable_cache } from "next/cache";
+import {
+  CMS_DEFAULT_REVALIDATE_SECONDS,
+  CMS_LAYOUT_TAG,
+  CMS_PAGES_INDEX_TAG,
+  cmsPageTag,
+  normalizeCmsSlug,
+} from "@agrohome/shared";
+
 const API_BASE =
   process.env.API_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
@@ -20,11 +29,14 @@ export type ResolvedHomeBlock = SnapshotBlock & {
   resolved?: unknown;
 };
 
-async function apiJson<T>(path: string, init?: RequestInit): Promise<T | null> {
+type FetchInit = RequestInit & {
+  next?: { revalidate?: number | false; tags?: string[] };
+};
+
+async function apiJson<T>(path: string, init?: FetchInit): Promise<T | null> {
   try {
     const res = await fetch(`${API_BASE.replace(/\/$/, "")}/api/v1${path}`, {
       ...init,
-      cache: "no-store",
       headers: {
         "Content-Type": "application/json",
         ...(init?.headers || {}),
@@ -59,23 +71,40 @@ type PagePayload = {
   };
 };
 
-async function fetchPublishedPageBySlug(slug: string): Promise<PagePayload | null> {
-  const viaQuery = await apiJson<PagePayload>(
-    `/pages?slug=${encodeURIComponent(slug)}`
-  );
-  if (viaQuery?.content?.snapshot?.blocks?.length) return viaQuery;
+export type PublishedPage = {
+  id?: string;
+  title: string;
+  slug: string;
+  blocks: ResolvedHomeBlock[];
+  revalidateSeconds?: number;
+  seo?: PageSeo;
+};
 
-  if (slug === "/" || slug === "") {
-    const viaHome = await apiJson<PagePayload>(`/pages/home`);
-    if (viaHome?.content?.snapshot?.blocks?.length) return viaHome;
-  }
+function pageFetchInit(slug: string, revalidate = CMS_DEFAULT_REVALIDATE_SECONDS): FetchInit {
+  const normalized = normalizeCmsSlug(slug);
+  return {
+    next: {
+      revalidate,
+      tags: [cmsPageTag(normalized)],
+    },
+  };
+}
+
+async function fetchPublishedPageBySlug(slug: string): Promise<PagePayload | null> {
+  const init = pageFetchInit(slug);
+  const viaQuery = await apiJson<PagePayload>(
+    `/pages?slug=${encodeURIComponent(slug)}`,
+    init
+  );
+  if (viaQuery?.content) return viaQuery;
 
   const bare = slug.replace(/^\//, "");
   if (bare && bare !== "home") {
     const viaPath = await apiJson<PagePayload>(
-      `/pages/${encodeURIComponent(bare)}`
+      `/pages/${encodeURIComponent(bare)}`,
+      init
     );
-    if (viaPath?.content?.snapshot?.blocks?.length) return viaPath;
+    if (viaPath?.content) return viaPath;
   }
 
   return null;
@@ -85,19 +114,15 @@ function asResolvedList(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
 }
 
-export async function getPublishedPage(slug: string): Promise<{
-  id?: string;
-  title: string;
-  slug: string;
-  blocks: ResolvedHomeBlock[];
-  revalidateSeconds?: number;
-  seo?: PageSeo;
-} | null> {
+async function loadPublishedPage(slug: string): Promise<PublishedPage | null> {
   const page = await fetchPublishedPageBySlug(slug);
 
-  if (!page?.content?.snapshot?.blocks?.length) return null;
+  if (!page?.content) return null;
 
-  const blocks = [...page.content.snapshot.blocks]
+  const revalidateSeconds =
+    page.content.revalidateSeconds ?? CMS_DEFAULT_REVALIDATE_SECONDS;
+
+  const blocks = [...(page.content.snapshot?.blocks ?? [])]
     .filter((b) => b.isVisible !== false)
     .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
@@ -111,12 +136,22 @@ export async function getPublishedPage(slug: string): Promise<{
       "/blocks/resolve",
       {
         method: "POST",
+        ...pageFetchInit(slug, revalidateSeconds),
         body: JSON.stringify({
-          blocks: toResolve.map((b) => ({
-            id: b.id,
-            sourceType: b.sourceType,
-            payload: b.payload,
-          })),
+          blocks: toResolve.map((b) => {
+            const payload = { ...(b.payload || {}) };
+            const entity = String(payload.entity || "");
+            const isCommentList =
+              b.type === "comment_list" || entity === "comment";
+            if (isCommentList && payload.showOnHome === undefined) {
+              payload.showOnHome = true;
+            }
+            return {
+              id: b.id,
+              sourceType: b.sourceType,
+              payload,
+            };
+          }),
         }),
       }
     );
@@ -127,7 +162,7 @@ export async function getPublishedPage(slug: string): Promise<{
     id: page.content.id,
     title: page.content.title,
     slug: page.content.slug,
-    revalidateSeconds: page.content.revalidateSeconds,
+    revalidateSeconds,
     seo: page.content.seo ?? null,
     blocks: blocks.map((b) => {
       const isEntity =
@@ -140,6 +175,20 @@ export async function getPublishedPage(slug: string): Promise<{
       };
     }),
   };
+}
+
+export async function getPublishedPage(
+  slug: string
+): Promise<PublishedPage | null> {
+  const normalized = normalizeCmsSlug(slug);
+  return unstable_cache(
+    () => loadPublishedPage(normalized),
+    [`published-page-${normalized}`],
+    {
+      tags: [cmsPageTag(normalized)],
+      revalidate: CMS_DEFAULT_REVALIDATE_SECONDS,
+    }
+  )();
 }
 
 /** Build Next.js metadata from a CMS/entity SEO record. */
@@ -173,17 +222,37 @@ export async function getPublishedAboutPage() {
   return getPublishedPage("/about");
 }
 
+export async function getPublishedPageSlugs(): Promise<string[]> {
+  const res = await apiJson<{ content: string[] }>("/pages/slugs", {
+    next: {
+      revalidate: CMS_DEFAULT_REVALIDATE_SECONDS,
+      tags: [CMS_PAGES_INDEX_TAG],
+    },
+  });
+  const slugs = Array.isArray(res?.content) ? res.content : [];
+  return slugs.map((slug) => normalizeCmsSlug(String(slug)));
+}
+
 export type SiteSettings = {
   id: string;
   logoUrl: string | null;
   faviconUrl: string | null;
   footerText: string | null;
   socialLinks: Array<{ label?: string; href?: string }>;
+  headerLinks: Array<{ title?: string; href?: string }>;
   footerLinkGroups: Array<{
     title?: string;
     links?: Array<{ title?: string; href?: string }>;
   }>;
 };
+
+const DEFAULT_HEADER_LINKS = [
+  { title: "صفحه اصلی", href: "/" },
+  { title: "محصولات", href: "/products" },
+  { title: "وبلاگ", href: "/blogs" },
+  { title: "درباره ما", href: "/about" },
+  { title: "تماس با ما", href: "/contact" },
+];
 
 const emptySiteSettings: SiteSettings = {
   id: "default",
@@ -195,6 +264,7 @@ const emptySiteSettings: SiteSettings = {
     { label: "اینستاگرام", href: "https://www.instagram.com/agrohome" },
     { label: "تلگرام", href: "https://t.me/agrohome" },
   ],
+  headerLinks: DEFAULT_HEADER_LINKS,
   footerLinkGroups: [
     {
       title: "دسترسی سریع",
@@ -217,22 +287,40 @@ const emptySiteSettings: SiteSettings = {
   ],
 };
 
-export async function getSiteSettings(): Promise<SiteSettings> {
-  const res = await apiJson<{ content: SiteSettings }>("/site-settings");
+async function loadSiteSettings(): Promise<SiteSettings> {
+  const res = await apiJson<{ content: SiteSettings }>("/site-settings", {
+    next: {
+      revalidate: CMS_DEFAULT_REVALIDATE_SECONDS,
+      tags: [CMS_LAYOUT_TAG],
+    },
+  });
   if (!res?.content) return emptySiteSettings;
+  const headerLinks =
+    Array.isArray(res.content.headerLinks) && res.content.headerLinks.length
+      ? res.content.headerLinks
+      : emptySiteSettings.headerLinks;
   return {
     ...emptySiteSettings,
     ...res.content,
     logoUrl: res.content.logoUrl || emptySiteSettings.logoUrl,
     faviconUrl: res.content.faviconUrl || emptySiteSettings.faviconUrl,
     footerText: res.content.footerText ?? emptySiteSettings.footerText,
-    socialLinks: Array.isArray(res.content.socialLinks) && res.content.socialLinks.length
-      ? res.content.socialLinks
-      : emptySiteSettings.socialLinks,
+    socialLinks:
+      Array.isArray(res.content.socialLinks) && res.content.socialLinks.length
+        ? res.content.socialLinks
+        : emptySiteSettings.socialLinks,
+    headerLinks,
     footerLinkGroups:
       Array.isArray(res.content.footerLinkGroups) &&
       res.content.footerLinkGroups.length
         ? res.content.footerLinkGroups
         : emptySiteSettings.footerLinkGroups,
   };
+}
+
+export async function getSiteSettings(): Promise<SiteSettings> {
+  return unstable_cache(loadSiteSettings, ["cms-site-settings"], {
+    tags: [CMS_LAYOUT_TAG],
+    revalidate: CMS_DEFAULT_REVALIDATE_SECONDS,
+  })();
 }

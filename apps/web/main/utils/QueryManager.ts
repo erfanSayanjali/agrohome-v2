@@ -1,11 +1,13 @@
 'use client';
 
+import { useTransition } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 
 export function useQueryManager() {
   const router = useRouter();
-  const searchParams = useSearchParams()! ;
+  const searchParams = useSearchParams()!;
   const pathname = usePathname();
+  const [, startTransition] = useTransition();
 
   const get = (key: string) => {
     return searchParams.get(key);
@@ -28,7 +30,12 @@ export function useQueryManager() {
 
   const set = (
     entries: Record<string, string | number | undefined>,
-    options: { replace?: boolean, multi?: boolean, targetUrl?: string | undefined } = {}
+    options: {
+      replace?: boolean;
+      multi?: boolean | string[];
+      targetUrl?: string;
+      scroll?: boolean;
+    } = {}
   ) => {
     const params = new URLSearchParams(searchParams);
     if (options.multi === true) {
@@ -91,14 +98,17 @@ export function useQueryManager() {
       );
     }
     const url = `${options.targetUrl || pathname}?${params.toString()}`;
-    if (options.replace) {
-      router.replace(url, { scroll: true });
-    } else {
-      router.push(url, { scroll: true });
-    }
+    const scroll = options.scroll ?? true;
+    startTransition(() => {
+      if (options.replace) {
+        router.replace(url, { scroll });
+      } else {
+        router.push(url, { scroll });
+      }
+    });
   };
 
-  const remove = (keys: string | string[]) => {
+  const remove = (keys: string | string[], options: { scroll?: boolean } = {}) => {
     const params = new URLSearchParams(searchParams);
     if (Array.isArray(keys)) {
       keys.forEach((key) => params.delete(key));
@@ -106,7 +116,10 @@ export function useQueryManager() {
       params.delete(keys);
     }
     const url = `${pathname}?${params.toString()}`;
-    router.push(url, { scroll: false });
+    const scroll = options.scroll ?? false;
+    startTransition(() => {
+      router.push(url, { scroll });
+    });
   };
 
   return { get, getAll, getAllParams, set, remove, toString };

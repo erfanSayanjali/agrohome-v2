@@ -1,7 +1,6 @@
 'use client';
 import PagesTitle from '../components/main/cards/PagesTitle';
 import SearchBox from '../components/main/products/SearchBox';
-import Link from 'next/link';
 import Image from 'next/image';
 import MediaTitle from '../components/main/modules/MediaTitle/MediaTitle'
 import { FaArrowLeft } from "react-icons/fa6";
@@ -10,6 +9,13 @@ import Pagination from '../components/main/modules/pagination/Pagination'
 import { useQueryManager } from '../utils/QueryManager';
 import { useEffect, useState } from 'react';
 import { listBlogs, mediaUrl } from '../lib/data/stubs';
+import CategoryTreeFilter from '../components/main/filters/CategoryTreeFilter';
+import {
+  expandSelectedIds,
+  nestCategories,
+  selectedFilterSlugs,
+} from '../utils/categories';
+import EmptyState from '../components/main/empty/EmptyState';
 const Title = () => {
     return (
         <PagesTitle
@@ -33,25 +39,15 @@ const Filters = ({parentCategories , currentCategory}) => {
                 <p className='border-b font-extrabold border-dashed py-4'>
                     موضوعات وبلاگ
                 </p>
-                <ul className='mt-3'>
-                 {
-                    parentCategories?.length ? parentCategories?.map(item=>{
-                        return (
-                            <li key={item._id}>
-                            <Link href={`/blogs/${item.slug}`} className={` ${currentCategory?.slug === item.slug ? 'text-green-900!' :''} flex text-[#242424] items-center justify-between py-2`}>
-                                {item.title}
-    
-                                <div className='text-sm font-["fontfanum"] text-gray-500 border w-7 h-7 rounded-md flex items-center justify-center  border-[#BEDACC]'>
-                                    5
-                                </div>
-    
-                            </Link>
-                        </li>
-                        )
-                    }):''
-                 }
-               
-                </ul>
+                <div className='mt-3'>
+                    <CategoryTreeFilter
+                        categories={parentCategories}
+                        currentCategory={currentCategory}
+                        listPath='/blogs'
+                        query={query}
+                        allLabel='همه موضوعات'
+                    />
+                </div>
             </div>
         </div>
     )
@@ -88,52 +84,59 @@ const BlogsPage = ({currentCategory = null , parentCategories}) => {
     const [state, setState] = useState({
       blogs: [],
       loading: true,
-      detail:{page:1,limit:20,totalPages:1}
+      refreshing: false,
+      detail:{page:1,limit:12,totalPages:1}
     });
   
     // defaultQueries only once
     useEffect(() => {
-        
-     
         if(!sort){
-            query.set({ sort: 'newest' , page:1 });
-        }else{
-            query.set({  page:1 });
+            query.set({ sort: 'newest' , page: page || 1 });
         }
-    
-   
-
-    
- 
     }, []);
   
     const getBlogs = async () => {
-      setState((prev) => ({ ...prev, loading: true }));
+      setState((prev) => ({
+        ...prev,
+        loading: prev.blogs.length === 0,
+        refreshing: prev.blogs.length > 0,
+      }));
   
       const sortRegister = {
         newest: '-createdAt',
         oldest: 'createdAt',
       };
   
-      const filterRegister = ({ categories, status }) => ({
-         status: 'published',
-       
-        ...(currentCategory && {category_id : currentCategory._id})
-        // اگر خواستی بعدا کد دسته‌بندی رو فعال می‌کنم
-      });
-  
- 
+      const currentPage = Math.max(1, Number(page) || 1);
+      const tree = nestCategories(parentCategories);
+      const selectedSlugs = selectedFilterSlugs(categories, currentCategory?.slug);
+      const categoryIds = expandSelectedIds(tree, selectedSlugs);
+      const filters = {
+        ...(categoryIds.length ? { categoryIds } : {}),
+      };
       
       try {
         const res = await listBlogs({
           sort: sortRegister[sort || 'newest'],
           search,
-          filters: filterRegister({ categories, status: available }),
+          page: currentPage,
+          limit: 12,
+          filters,
         });
 
-        setState((prev) => ({ ...prev, blogs: res.content, loading: false }));
+        setState((prev) => ({
+          ...prev,
+          blogs: res.content || [],
+          loading: false,
+          refreshing: false,
+          detail: {
+            page: res.meta?.page || currentPage,
+            limit: res.meta?.limit || 12,
+            totalPages: res.meta?.totalPages || 1,
+          },
+        }));
       } catch (error) {
-        setState((prev) => ({ ...prev, loading: false }));
+        setState((prev) => ({ ...prev, loading: false, refreshing: false }));
       }
     };
   
@@ -141,7 +144,7 @@ const BlogsPage = ({currentCategory = null , parentCategories}) => {
     useEffect(() => {
       if (!sort) return; // تا وقتی defaultQuery ست نشده fetch نزن
       getBlogs();
-    }, [sort, categories, available, search ,page]);
+    }, [sort, categories, available, search, page, currentCategory?._id, currentCategory?.id]);
   
     
   
@@ -152,14 +155,18 @@ const BlogsPage = ({currentCategory = null , parentCategories}) => {
                 <Filters currentCategory={currentCategory} parentCategories={parentCategories} />
                 <div className='md:w-[calc(100%-350px)]  '>
                     <Sort search={search} />
-                    <div className='flex gap-6 flex-wrap w-full justify-between '>
+                    {state.loading || state.blogs?.length ? (
+                    <div
+                      className={`flex gap-6 flex-wrap w-full justify-between transition-opacity duration-200 ${state.refreshing ? 'pointer-events-none opacity-60' : ''}`}
+                      aria-busy={state.refreshing}
+                    >
                         {
-                            ( (state?.loading ) ? [1, 2, 3] : state?.blogs)?.map((blog, index) => (
+                            (state.loading ? [1, 2, 3] : state.blogs)?.map((blog, index) => (
                                 <MediaTitle
                                  className='w-full'
                                 loading={state.loading}
                                     wrapperClassName='bg-gray-100 w-full  md:p-5 p-3 rounded-2xl gap-1! md:gap-3!'
-                                   key={index}
+                                   key={state.loading ? index : (blog._id || blog.id || blog.slug || index)}
                                     isLink={!state.loading} href={`/blog/${blog.slug}`   } Tag='article'
                                     data={
                                         {
@@ -179,7 +186,7 @@ const BlogsPage = ({currentCategory = null , parentCategories}) => {
                                                 className: '!line-clamp-2 h-fit text-sm md:text-base '
                                             },
                                             mediaElement: state.loading ? {content:'',
-                                                className: ` md:w-[250px] w-[110px]  aspect-[2/1.5] self-center rounded-2xl md:h-[170px] ms-2`
+                                                className: ` md:w-[250px] w-[110px]  aspect-[2/1.5] self-center rounded-2xl md:h-[170px] ms-2 object-cover`
 
 
                                             } :{
@@ -192,7 +199,7 @@ const BlogsPage = ({currentCategory = null , parentCategories}) => {
                                                     width: 500, height: 400,
                                                 },
 
-                                                className: ` md:w-[250px] w-[110px]  aspect-[2/1.5] self-center rounded-2xl md:h-[170px] ms-2`
+                                                className: ` md:w-[250px] w-[110px]  aspect-[2/1.5] self-center rounded-2xl md:h-[170px] ms-2 object-cover`
                                             },
                                             actionBottom: {
                                                 className: ' justify-self-end hidden md:flex      items-center gap-2',
@@ -208,14 +215,28 @@ const BlogsPage = ({currentCategory = null , parentCategories}) => {
                             ))
                         }
                     </div>
+                    ) : (
+                      <EmptyState
+                        variant='blogs'
+                        search={search}
+                        categoryTitle={currentCategory?.title}
+                        hasFilters={Boolean(search || categories || currentCategory)}
+                        onClearFilters={() =>
+                          query.set(
+                            { categories: undefined, search: undefined, page: 1 },
+                            { targetUrl: '/blogs' }
+                          )
+                        }
+                      />
+                    )}
+                    {state.loading || state.blogs?.length ? (
                     <Pagination
-                        ButtonClassName='bg-gray-100 rounded-lg  '
-                        activeButtonClassName='bg-green-800 text-[#fff] rounded-lg'
-                        className={'mt-5 justify-self-end w-fit mb-2!'}
-                        navigationButtonClass='p-2 bg-gray-200 rounded-xl'
-                        NextButton={'بعدی'}
-                        PrevButton={'قبلی'}
-                        totalPages={state.detail?.totalPages} />
+                        className="mt-8 mb-3"
+                        NextButton="بعدی"
+                        PrevButton="قبلی"
+                        totalPages={state.detail?.totalPages}
+                    />
+                    ) : null}
                 </div>
                 
             </div>

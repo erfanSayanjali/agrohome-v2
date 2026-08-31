@@ -12,8 +12,11 @@ import { DataTable, type Column } from "@/components/data/data-table";
 import { ConfirmDelete } from "@/components/data/confirm-delete";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { IconActionButton } from "@/components/ui/icon-action-button";
 import { ProductEditor, type ProductRow } from "@/components/products/product-editor";
 import { buildFilterMeta, enrichColumnsWithFilters } from "@/lib/enrich-column-filters";
+import { mediaUrl } from "@/lib/utils";
+import { toMediaRef } from "@agrohome/shared";
 
 export default function ProductsPage() {
   const list = useResourceList<ProductRow>("/admin/products", { sort: "sortOrder" });
@@ -26,6 +29,28 @@ export default function ProductsPage() {
     () =>
       enrichColumnsWithFilters(
         [
+          {
+            key: "media",
+            header: "تصویر",
+            filter: false,
+            className: "w-16",
+            cell: (r) => {
+              const media = toMediaRef(r.media);
+              const src = mediaUrl(media);
+              if (!src) {
+                return (
+                  <div className="h-12 w-12 rounded-md bg-[var(--admin-muted)]/15" />
+                );
+              }
+              return (
+                <img
+                  src={src}
+                  alt={media?.alt || r.title}
+                  className="h-12 w-12 rounded-md object-cover"
+                />
+              );
+            },
+          },
           { key: "title", header: "عنوان", cell: (r) => r.title },
           {
             key: "slug",
@@ -65,11 +90,8 @@ export default function ProductsPage() {
             filter: false,
             cell: (row) => (
               <div className="inline-flex flex-nowrap items-center gap-0.5">
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  aria-label="ویرایش"
+                <IconActionButton
+                  tooltip="ویرایش"
                   onClick={() => {
                     setMode("edit");
                     setEditingId(row.id);
@@ -77,8 +99,8 @@ export default function ProductsPage() {
                   }}
                 >
                   <Pencil className="h-4 w-4" />
-                </Button>
-                <Button type="button" size="icon" variant="ghost" aria-label="نظرات" asChild>
+                </IconActionButton>
+                <IconActionButton tooltip="نظرات" asChild>
                   <Link
                     href={`/comments?filters=${encodeURIComponent(
                       JSON.stringify({ targetType: "product", productId: row.id })
@@ -86,16 +108,10 @@ export default function ProductsPage() {
                   >
                     <MessageSquare className="h-4 w-4" />
                   </Link>
-                </Button>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  aria-label="حذف"
-                  onClick={() => setDeleteId(row.id)}
-                >
+                </IconActionButton>
+                <IconActionButton tooltip="حذف" onClick={() => setDeleteId(row.id)}>
                   <Trash2 className="h-4 w-4 text-[var(--admin-danger)]" />
-                </Button>
+                </IconActionButton>
               </div>
             ),
           },

@@ -1,0 +1,13 @@
+# Local reverse proxy while apps run on the host (pnpm dev).
+# Usage: docker compose -f docker-compose.proxy.yml up
+# Then open http://localhost:8080  /  http://localhost:8080/admin
+
+services:
+  proxy:
+    image: caddy:2-alpine
+    ports:
+      - "8080:80"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./deploy/Caddyfile.dev:/etc/caddy/Caddyfile:ro

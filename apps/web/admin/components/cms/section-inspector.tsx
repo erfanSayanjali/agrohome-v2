@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
-import { Label } from "@/components/ui/label";
+import { FormField } from "@/components/ui/form-field";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -159,18 +159,23 @@ export function SectionInspector({
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4">
         {!path ? (
           <>
-            <div className="space-y-2">
-              <Label>نام سکشن</Label>
+            <FormField label="نام سکشن">
               <Input value={name} onChange={(e) => setName(e.target.value)} />
-            </div>
-            <div className="flex items-center justify-between gap-3 rounded-[var(--admin-radius-sm)] border border-[var(--admin-border)] px-3 py-2">
-              <Label htmlFor="vis">قابل نمایش</Label>
-              <Switch id="vis" checked={isVisible} onCheckedChange={setIsVisible} />
-            </div>
-            <div className="space-y-2">
-              <Label>Anchor</Label>
+            </FormField>
+            <FormField label="قابل نمایش" htmlFor="vis">
+              <div
+                dir="rtl"
+                className="flex h-10 items-center justify-between gap-3 rounded-[var(--admin-radius-sm)] border border-[var(--admin-border)] bg-[var(--admin-bg-elevated)] px-3"
+              >
+                <span className="text-sm text-[var(--admin-muted)]">
+                  {isVisible ? "فعال" : "غیرفعال"}
+                </span>
+                <Switch id="vis" checked={isVisible} onCheckedChange={setIsVisible} />
+              </div>
+            </FormField>
+            <FormField label="Anchor">
               <Input value={anchor} onChange={(e) => setAnchor(e.target.value)} dir="ltr" />
-            </div>
+            </FormField>
             {entityQuery && queryDraft ? (
               <>
                 <Separator />
@@ -260,45 +265,41 @@ function FieldControl({
 }) {
   if (kind === "textarea") {
     return (
-      <div className="space-y-2">
-        <Label>{label}</Label>
+      <FormField label={label}>
         <Textarea
           value={String(value ?? "")}
           onChange={(e) => onChange(e.target.value)}
           className="min-h-[120px]"
         />
-      </div>
+      </FormField>
     );
   }
   if (kind === "richtext") {
     return (
-      <div className="space-y-2">
-        <Label>{label}</Label>
+      <FormField label={label}>
         <RichTextEditor
           value={String(value ?? "")}
           onChange={(html) => onChange(html)}
           height={260}
         />
-      </div>
+      </FormField>
     );
   }
   if (kind === "number") {
     return (
-      <div className="space-y-2">
-        <Label>{label}</Label>
+      <FormField label={label}>
         <Input
           type="number"
           value={value === undefined || value === null ? "" : String(value)}
           onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))}
           dir="ltr"
         />
-      </div>
+      </FormField>
     );
   }
   if (kind === "color") {
     return (
-      <div className="space-y-2">
-        <Label>{label}</Label>
+      <FormField label={label}>
         <div className="flex gap-2">
           <Input
             type="color"
@@ -312,7 +313,7 @@ function FieldControl({
             dir="ltr"
           />
         </div>
-      </div>
+      </FormField>
     );
   }
   if (kind === "image") {
@@ -325,14 +326,13 @@ function FieldControl({
     );
   }
   return (
-    <div className="space-y-2">
-      <Label>{label}</Label>
+    <FormField label={label}>
       <Input
         value={String(value ?? "")}
         onChange={(e) => onChange(e.target.value)}
         dir={kind === "url" ? "ltr" : undefined}
       />
-    </div>
+    </FormField>
   );
 }
 
@@ -389,7 +389,7 @@ function ListEditor({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <Label>{slot.label}</Label>
+        <p className="text-right text-sm font-medium">{slot.label}</p>
         <Button type="button" size="sm" variant="secondary" onClick={addItem}>
           <Plus className="h-3.5 w-3.5" />
           افزودن

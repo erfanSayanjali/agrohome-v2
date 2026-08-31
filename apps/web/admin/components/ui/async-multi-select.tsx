@@ -156,11 +156,11 @@ export function AsyncMultiSelect({
         <PopoverPrimitive.Trigger asChild>
           <Button
             type="button"
-            variant="outline"
+            variant="field"
             role="combobox"
             disabled={disabled || atMax}
             aria-expanded={open}
-            className="w-full justify-between font-normal text-start"
+            className="w-full justify-between text-start"
           >
             <span className="truncate text-[var(--admin-muted)]">
               {atMax ? "حداکثر تعداد انتخاب شده" : placeholder}

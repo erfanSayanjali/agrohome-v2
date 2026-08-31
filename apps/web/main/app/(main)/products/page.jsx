@@ -1,6 +1,7 @@
 import React, { Suspense } from 'react';
 import ProductsPage from '../../../pages/ProductsPage';
-import { getProductCategories, getSeoByPath } from '../../../lib/data/stubs';
+import ProductsPageLoading from '../../../components/main/products/ProductsPageLoading';
+import { getProductCategoriesNested, getSeoByPath } from '../../../lib/data/stubs';
 
 export async function generateMetadata() {
   const seo = await getSeoByPath('/products');
@@ -18,9 +19,9 @@ export async function generateMetadata() {
 }
 
 const page = async () => {
-  const product_category = await getProductCategories();
+  const product_category = await getProductCategoriesNested();
   return (
-    <Suspense fallback={<div></div>}>
+    <Suspense fallback={<ProductsPageLoading />}>
       <ProductsPage product_category={product_category.content} />
     </Suspense>
   );

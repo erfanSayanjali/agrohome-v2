@@ -17,7 +17,7 @@ import { formatFaNumber } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
-import { Label } from "@/components/ui/label";
+import { FormField } from "@/components/ui/form-field";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -460,20 +460,14 @@ export function ProductEditor({
             <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5" dir="rtl">
               <TabsContent value="info" className="mt-0 space-y-4" dir="rtl">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2" dir="rtl">
-                  <div className="space-y-2 text-start">
-                    <Label>
-                      عنوان <span className="text-[var(--admin-danger)]">*</span>
-                    </Label>
+                  <FormField label="عنوان" required>
                     <Input
                       value={form.title}
                       onChange={(e) => patchForm("title", e.target.value)}
                       dir="rtl"
                     />
-                  </div>
-                  <div className="space-y-2 text-start">
-                    <Label>
-                      اسلاگ <span className="text-[var(--admin-danger)]">*</span>
-                    </Label>
+                  </FormField>
+                  <FormField label="اسلاگ" required>
                     <Input
                       value={form.slug}
                       onChange={(e) => {
@@ -486,25 +480,22 @@ export function ProductEditor({
                       }}
                       dir="ltr"
                     />
-                  </div>
-                  <div className="space-y-2 text-start sm:col-span-2">
-                    <Label>زیرعنوان</Label>
+                  </FormField>
+                  <FormField label="زیرعنوان" className="sm:col-span-2">
                     <Input
                       value={form.subtitle}
                       onChange={(e) => patchForm("subtitle", e.target.value)}
                       dir="rtl"
                     />
-                  </div>
-                  <div className="space-y-2 text-start sm:col-span-2">
-                    <Label>توضیحات</Label>
+                  </FormField>
+                  <FormField label="توضیحات" className="sm:col-span-2">
                     <RichTextEditor
                       value={form.description}
                       onChange={(html) => patchForm("description", html)}
                       height={320}
                     />
-                  </div>
-                  <div className="space-y-2 text-start sm:col-span-2">
-                    <Label>دسته‌بندی‌ها</Label>
+                  </FormField>
+                  <FormField label="دسته‌بندی‌ها" className="sm:col-span-2">
                     <AsyncMultiSelect
                       path="/admin/product-categories"
                       values={categories}
@@ -514,16 +505,15 @@ export function ProductEditor({
                       mapItem={mapCategoryOption}
                       sort="title"
                     />
-                  </div>
-                  <div className="space-y-2 text-start sm:col-span-2">
+                  </FormField>
+                  <div className="sm:col-span-2">
                     <MediaField
                       label="تصویر شاخص"
                       value={form.media}
                       onChange={(next) => patchForm("media", next)}
                     />
                   </div>
-                  <div className="space-y-2 text-start">
-                    <Label>وضعیت</Label>
+                  <FormField label="وضعیت">
                     <Select
                       value={form.status}
                       onValueChange={(v) => patchForm("status", v)}
@@ -537,9 +527,8 @@ export function ProductEditor({
                         <SelectItem value="UNAVAILABLE">ناموجود</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
-                  <div className="space-y-2 text-start sm:col-span-2">
-                    <Label>ویژه</Label>
+                  </FormField>
+                  <FormField label="ویژه" className="sm:col-span-2">
                     <div
                       dir="rtl"
                       className="flex h-10 items-center justify-between gap-3 rounded-[var(--admin-radius-sm)] border border-[var(--admin-border)] bg-[var(--admin-bg-elevated)] px-3"
@@ -552,7 +541,7 @@ export function ProductEditor({
                         onCheckedChange={(v) => patchForm("isFeatured", v)}
                       />
                     </div>
-                  </div>
+                  </FormField>
                 </div>
               </TabsContent>
 
@@ -614,8 +603,7 @@ export function ProductEditor({
                           </Button>
                         </div>
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                          <div className="space-y-2">
-                            <Label>مقدار</Label>
+                          <FormField label="مقدار">
                             <Input
                               type="number"
                               value={pkg.value}
@@ -630,9 +618,8 @@ export function ProductEditor({
                               dir="ltr"
                               placeholder="مثلاً 1"
                             />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>واحد</Label>
+                          </FormField>
+                          <FormField label="واحد">
                             <Select
                               value={normalizePackageUnit(pkg.unit)}
                               onValueChange={(unit) =>
@@ -655,7 +642,7 @@ export function ProductEditor({
                                 ))}
                               </SelectContent>
                             </Select>
-                          </div>
+                          </FormField>
                         </div>
                       </div>
                     )}
@@ -722,8 +709,7 @@ export function ProductEditor({
                           </Button>
                         </div>
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                          <div className="space-y-2 sm:col-span-2">
-                            <Label>نوع مشخصه</Label>
+                          <FormField label="نوع مشخصه" className="sm:col-span-2">
                             <AsyncSelect
                               path="/admin/specifications"
                               value={spec.specificationId}
@@ -749,9 +735,8 @@ export function ProductEditor({
                                 )
                               }
                             />
-                          </div>
-                          <div className="space-y-2 sm:col-span-2">
-                            <Label>مقدار</Label>
+                          </FormField>
+                          <FormField label="مقدار" className="sm:col-span-2">
                             <Input
                               value={spec.value}
                               onChange={(e) =>
@@ -766,10 +751,9 @@ export function ProductEditor({
                               placeholder="مقدار نمایشی برای این محصول"
                               dir="rtl"
                             />
-                          </div>
-                          <div className="space-y-2 sm:col-span-2">
-                            <Label>برجسته</Label>
-                            <div className="flex h-10 items-center justify-between gap-3 rounded-[var(--admin-radius-sm)] border border-[var(--admin-border)] bg-[var(--admin-bg)]/40 px-3">
+                          </FormField>
+                          <FormField label="برجسته" className="sm:col-span-2">
+                            <div className="flex h-10 items-center justify-between gap-3 rounded-[var(--admin-radius-sm)] border border-[var(--admin-border)] bg-[var(--admin-bg-elevated)] px-3">
                               <span className="text-sm text-[var(--admin-muted)]">
                                 {spec.highlight ? "فعال" : "غیرفعال"}
                               </span>
@@ -786,7 +770,7 @@ export function ProductEditor({
                                 }
                               />
                             </div>
-                          </div>
+                          </FormField>
                         </div>
                       </div>
                     )}

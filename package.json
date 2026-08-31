@@ -12,11 +12,20 @@
     "build:main": "pnpm --filter @agrohome/main build",
     "build:admin": "pnpm --filter @agrohome/admin build",
     "build:api": "pnpm --filter @agrohome/api build",
+    "typecheck": "pnpm --filter @agrohome/shared build && pnpm --filter @agrohome/api build",
+    "test": "pnpm --filter @agrohome/api test",
+    "audit:deps": "pnpm audit --audit-level moderate",
     "db:generate": "pnpm --filter @agrohome/api db:generate",
     "db:migrate": "pnpm --filter @agrohome/api db:migrate",
     "db:push": "pnpm --filter @agrohome/api db:push",
     "db:seed": "pnpm --filter @agrohome/api db:seed",
     "db:export-seed": "pnpm --filter @agrohome/api db:export-seed",
-    "import:legacy": "pnpm --filter @agrohome/api import:legacy"
+    "import:legacy": "pnpm --filter @agrohome/api import:legacy",
+    "download:blog-media": "pnpm --filter @agrohome/api download:blog-media",
+    "backfill:media": "pnpm --filter @agrohome/api backfill:media",
+    "sync:legacy-blog-categories": "pnpm --filter @agrohome/api sync:legacy-blog-categories",
+    "sync:legacy-product-categories": "pnpm --filter @agrohome/api sync:legacy-product-categories",
+    "proxy:dev": "docker compose -f docker-compose.proxy.yml up",
+    "docker:up": "docker compose up --build"
   }
 }

@@ -25,12 +25,14 @@ const Comment = ({ rate, text, user = { name: '' } }) => {
 
 const Comments = ({comments = [], cms} = {}) => {
     const title = cms?.title || 'نظرات و رضایت مشتریان از محصولات ما';
-    const list = Array.isArray(comments) ? comments : [];
+    const list = (Array.isArray(comments) ? comments : []).filter(
+        (c) => c.showOnHome === true,
+    );
 
     if (!list.length) return null;
 
     return (
-        <div className={`bg-[#E9F2EA]`}>
+        <div className={`bg-[#E9F2EA] overflow-x-clip`}>
 
             <div className='max-w-7xl lg:mx-auto mx-3 md:py-20 py-10'>
                 <p className='text-xl font-extrabold whitespace-pre-line'>

@@ -7,6 +7,7 @@ import Comments from '../components/main/product/Comments.jsx';
 import Slider from '../components/main/modules/Slider.jsx';
 import ProductCard from '../components/main/cards/ProductCard.jsx';
 import Title from '../components/main/product/Title.jsx';
+import { sanitizeHtml } from '../utils/sanitize';
 
 
 const ProductPage = ({
@@ -17,17 +18,17 @@ const ProductPage = ({
 }) => {
     if (!data) return null;
     const safeSpecification = Array.isArray(specification) ? specification : [];
-    const extraSpec = safeSpecification?.filter(item => item.specification_id.position === 'extra')
+    const extraSpec = safeSpecification.filter(item => item?.specification_id?.position === 'extra')
 
     const NavigationItems = [
         { label: 'معرفی', key: 'description', section: Description },
         { label: ' مشخصات', key: 'specifications', section: Specifications },
         ...extraSpec.map(item => ({
-            label: item.specification_id.title, key: item.specification_id.title, section:
+            label: item.specification_id?.title, key: item.specification_id?.title || item._id, section:
 
-                <div id={item.specification_id.title}>
-                    <Title label={item.specification_id.title} />
-                    <div dangerouslySetInnerHTML={{ __html: item.value }} />
+                <div id={item.specification_id?.title}>
+                    <Title label={item.specification_id?.title} />
+                    <div className="editor" dangerouslySetInnerHTML={{ __html: sanitizeHtml(item.value) }} />
                 </div>
 
             , type: 'jsx'

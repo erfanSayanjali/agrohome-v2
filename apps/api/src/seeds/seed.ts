@@ -13,9 +13,17 @@ import { copyFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Prisma } from "@prisma/client";
+import { CMS_DEFAULT_REVALIDATE_SECONDS } from "@agrohome/shared";
 import { hashPassword } from "../lib/auth";
-import { prisma } from "../lib/prisma";
+import { prisma as defaultPrisma } from "../lib/prisma";
 import snapshot from "./data/snapshot.json";
+
+type SeedDb = Omit<
+  typeof defaultPrisma,
+  "$connect" | "$disconnect" | "$on" | "$transaction" | "$extends"
+>;
+
+let seedDb: SeedDb = defaultPrisma;
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const seedUploadsDir = join(__dirname, "data", "uploads");
@@ -116,7 +124,7 @@ async function upsertMany(
 
 async function seedRoles() {
   await upsertMany("roles", rows("roles"), (row) =>
-    prisma.role.upsert({
+    seedDb.role.upsert({
       where: { id: row.id as string },
       create: {
         id: row.id as string,
@@ -136,14 +144,27 @@ async function seedRoles() {
   );
 }
 
+const LEGACY_MOCK_ADMIN_PHONE = "09120000000";
+
+function adminPasswordByPhone(phone: string): string | undefined {
+  const pairs: Array<[string | undefined, string | undefined]> = [
+    [process.env.ADMIN_PHONE, process.env.ADMIN_PASSWORD],
+    [process.env.SECOND_ADMIN_PHONE, process.env.SECOND_ADMIN_PASSWORD],
+  ];
+  for (const [envPhone, envPassword] of pairs) {
+    if (envPhone && envPassword && phone === envPhone) return envPassword;
+  }
+  return undefined;
+}
+
 async function seedUsers() {
-  const adminPassword = process.env.ADMIN_PASSWORD;
   await upsertMany("users", rows("users"), async (row) => {
     let passwordHash = (row.passwordHash as string | null) ?? null;
-    if (adminPassword && (row.phone as string) === (process.env.ADMIN_PHONE || "09120000000")) {
-      passwordHash = await hashPassword(adminPassword);
+    const envPassword = adminPasswordByPhone(row.phone as string);
+    if (envPassword) {
+      passwordHash = await hashPassword(envPassword);
     }
-    return prisma.user.upsert({
+    return seedDb.user.upsert({
       where: { id: row.id as string },
       create: {
         id: row.id as string,
@@ -171,6 +192,18 @@ async function seedUsers() {
       },
     });
   });
+
+  const mockUser = await seedDb.user.findUnique({
+    where: { phone: LEGACY_MOCK_ADMIN_PHONE },
+  });
+  if (mockUser) {
+    await seedDb.blog.updateMany({
+      where: { authorId: mockUser.id },
+      data: { authorId: null },
+    });
+    await seedDb.user.delete({ where: { id: mockUser.id } });
+    console.log(`Removed legacy mock admin: ${LEGACY_MOCK_ADMIN_PHONE}`);
+  }
 }
 
 async function seedProductCategories() {
@@ -178,7 +211,7 @@ async function seedProductCategories() {
     rows("productCategories") as Array<Row & { id: string; parentId?: string | null }>,
   );
   await upsertMany("productCategories", sorted, (row) =>
-    prisma.productCategory.upsert({
+    seedDb.productCategory.upsert({
       where: { id: row.id as string },
       create: {
         id: row.id as string,
@@ -208,7 +241,7 @@ async function seedProductCategories() {
 
 async function seedProducts() {
   await upsertMany("products", rows("products"), (row) =>
-    prisma.product.upsert({
+    seedDb.product.upsert({
       where: { id: row.id as string },
       create: {
         id: row.id as string,
@@ -246,7 +279,7 @@ async function seedProducts() {
 
 async function seedProductCategoryLinks() {
   await upsertMany("productCategoryOnProduct", rows("productCategoryOnProduct"), (row) =>
-    prisma.productCategoryOnProduct.upsert({
+    seedDb.productCategoryOnProduct.upsert({
       where: {
         productId_categoryId: {
           productId: row.productId as string,
@@ -264,7 +297,7 @@ async function seedProductCategoryLinks() {
 
 async function seedPackages() {
   await upsertMany("packages", rows("packages"), (row) =>
-    prisma.package.upsert({
+    seedDb.package.upsert({
       where: { id: row.id as string },
       create: {
         id: row.id as string,
@@ -290,7 +323,7 @@ async function seedPackages() {
 
 async function seedSpecifications() {
   await upsertMany("specifications", rows("specifications"), (row) =>
-    prisma.specification.upsert({
+    seedDb.specification.upsert({
       where: { id: row.id as string },
       create: {
         id: row.id as string,
@@ -312,7 +345,7 @@ async function seedSpecifications() {
 
 async function seedProductSpecifications() {
   await upsertMany("productSpecifications", rows("productSpecifications"), (row) =>
-    prisma.productSpecification.upsert({
+    seedDb.productSpecification.upsert({
       where: { id: row.id as string },
       create: {
         id: row.id as string,
@@ -340,7 +373,7 @@ async function seedProductSpecifications() {
 
 async function seedTagCategories() {
   await upsertMany("tagCategories", rows("tagCategories"), (row) =>
-    prisma.tagCategory.upsert({
+    seedDb.tagCategory.upsert({
       where: { id: row.id as string },
       create: {
         id: row.id as string,
@@ -362,7 +395,7 @@ async function seedTagCategories() {
 
 async function seedTags() {
   await upsertMany("tags", rows("tags"), (row) =>
-    prisma.tag.upsert({
+    seedDb.tag.upsert({
       where: { id: row.id as string },
       create: {
         id: row.id as string,
@@ -386,7 +419,7 @@ async function seedTags() {
 
 async function seedProductTags() {
   await upsertMany("productTags", rows("productTags"), (row) =>
-    prisma.productTag.upsert({
+    seedDb.productTag.upsert({
       where: {
         productId_tagId: {
           productId: row.productId as string,
@@ -407,7 +440,7 @@ async function seedBlogCategories() {
     rows("blogCategories") as Array<Row & { id: string; parentId?: string | null }>,
   );
   await upsertMany("blogCategories", sorted, (row) =>
-    prisma.blogCategory.upsert({
+    seedDb.blogCategory.upsert({
       where: { id: row.id as string },
       create: {
         id: row.id as string,
@@ -437,7 +470,7 @@ async function seedBlogCategories() {
 
 async function seedBlogs() {
   await upsertMany("blogs", rows("blogs"), (row) =>
-    prisma.blog.upsert({
+    seedDb.blog.upsert({
       where: { id: row.id as string },
       create: {
         id: row.id as string,
@@ -473,7 +506,7 @@ async function seedComments() {
     comments.map((c) => ({ ...c, parentId: c.parentId ?? null })),
   );
   await upsertMany("comments", sorted, (row) =>
-    prisma.comment.upsert({
+    seedDb.comment.upsert({
       where: { id: row.id as string },
       create: {
         id: row.id as string,
@@ -484,6 +517,7 @@ async function seedComments() {
         website: (row.website as string | null) ?? null,
         rating: row.rating == null ? null : Number(row.rating),
         publish: Boolean(row.publish),
+        showOnHome: Boolean(row.showOnHome),
         targetType: row.targetType as "product" | "blog" | "comment",
         productId: (row.productId as string | null) ?? null,
         blogId: (row.blogId as string | null) ?? null,
@@ -499,6 +533,7 @@ async function seedComments() {
         website: (row.website as string | null) ?? null,
         rating: row.rating == null ? null : Number(row.rating),
         publish: Boolean(row.publish),
+        showOnHome: Boolean(row.showOnHome),
         targetType: row.targetType as "product" | "blog" | "comment",
         productId: (row.productId as string | null) ?? null,
         blogId: (row.blogId as string | null) ?? null,
@@ -511,7 +546,7 @@ async function seedComments() {
 
 async function seedCmsPages() {
   await upsertMany("cmsPages", rows("cmsPages"), (row) =>
-    prisma.cmsPage.upsert({
+    seedDb.cmsPage.upsert({
       where: { id: row.id as string },
       create: {
         id: row.id as string,
@@ -519,7 +554,9 @@ async function seedCmsPages() {
         title: row.title as string,
         status: row.status as "draft" | "published" | "archived",
         publishedAt: (row.publishedAt as Date | null) ?? null,
-        revalidateSeconds: Number(row.revalidateSeconds ?? 600),
+        revalidateSeconds: Number(
+          row.revalidateSeconds ?? CMS_DEFAULT_REVALIDATE_SECONDS
+        ),
         publishedSnapshot: asNullableJson(row.publishedSnapshot),
         createdAt: row.createdAt as Date,
         updatedAt: row.updatedAt as Date,
@@ -529,7 +566,9 @@ async function seedCmsPages() {
         title: row.title as string,
         status: row.status as "draft" | "published" | "archived",
         publishedAt: (row.publishedAt as Date | null) ?? null,
-        revalidateSeconds: Number(row.revalidateSeconds ?? 600),
+        revalidateSeconds: Number(
+          row.revalidateSeconds ?? CMS_DEFAULT_REVALIDATE_SECONDS
+        ),
         publishedSnapshot: asNullableJson(row.publishedSnapshot),
         updatedAt: row.updatedAt as Date,
       },
@@ -537,9 +576,30 @@ async function seedCmsPages() {
   );
 }
 
+const HOME_PAGE_ID = "cmsmx2ei8000170udndvfchlt";
+
+async function cleanupHomePageDuplicateBlocks() {
+  const canonicalIds = rows("contentBlocks")
+    .filter((row) => row.pageId === HOME_PAGE_ID)
+    .map((row) => row.id as string);
+
+  if (!canonicalIds.length) return;
+
+  const removed = await seedDb.contentBlock.deleteMany({
+    where: {
+      pageId: HOME_PAGE_ID,
+      id: { notIn: canonicalIds },
+    },
+  });
+
+  if (removed.count) {
+    console.log(`  home blocks: removed ${removed.count} duplicate(s)`);
+  }
+}
+
 async function seedContentBlocks() {
   await upsertMany("contentBlocks", rows("contentBlocks"), (row) =>
-    prisma.contentBlock.upsert({
+    seedDb.contentBlock.upsert({
       where: { id: row.id as string },
       create: {
         id: row.id as string,
@@ -569,12 +629,13 @@ async function seedContentBlocks() {
       },
     }),
   );
+  await cleanupHomePageDuplicateBlocks();
 }
 
 async function seedSiteSettings() {
   const row = data.siteSettings;
   if (!row) return;
-  await prisma.siteSettings.upsert({
+  await seedDb.siteSettings.upsert({
     where: { id: "default" },
     create: {
       id: "default",
@@ -582,6 +643,7 @@ async function seedSiteSettings() {
       faviconUrl: (row.faviconUrl as string | null) ?? null,
       footerText: (row.footerText as string | null) ?? null,
       socialLinks: asJson(row.socialLinks ?? []),
+      headerLinks: asJson(row.headerLinks ?? []),
       footerLinkGroups: asJson(row.footerLinkGroups ?? []),
     },
     update: {
@@ -589,6 +651,7 @@ async function seedSiteSettings() {
       faviconUrl: (row.faviconUrl as string | null) ?? null,
       footerText: (row.footerText as string | null) ?? null,
       socialLinks: asJson(row.socialLinks ?? []),
+      headerLinks: asJson(row.headerLinks ?? []),
       footerLinkGroups: asJson(row.footerLinkGroups ?? []),
     },
   });
@@ -596,7 +659,7 @@ async function seedSiteSettings() {
 
 async function seedSeos() {
   await upsertMany("seos", rows("seos"), (row) =>
-    prisma.seo.upsert({
+    seedDb.seo.upsert({
       where: { id: row.id as string },
       create: {
         id: row.id as string,
@@ -630,7 +693,7 @@ async function seedSeos() {
 
 async function seedMedia() {
   await upsertMany("media", rows("media"), (row) =>
-    prisma.media.upsert({
+    seedDb.media.upsert({
       where: { id: row.id as string },
       create: {
         id: row.id as string,
@@ -660,7 +723,7 @@ async function seedMedia() {
 
 async function seedContactMessages() {
   await upsertMany("contactMessages", rows("contactMessages"), (row) =>
-    prisma.contactMessage.upsert({
+    seedDb.contactMessage.upsert({
       where: { id: row.id as string },
       create: {
         id: row.id as string,
@@ -704,27 +767,33 @@ function restoreUploadFiles() {
 async function main() {
   console.log(`Seeding from snapshot (${(snapshot as { exportedAt?: string }).exportedAt ?? "unknown"})…`);
 
-  // Order matters: parents / FKs first.
-  await seedRoles();
-  await seedUsers();
-  await seedProductCategories();
-  await seedProducts();
-  await seedProductCategoryLinks();
-  await seedPackages();
-  await seedSpecifications();
-  await seedProductSpecifications();
-  await seedTagCategories();
-  await seedTags();
-  await seedProductTags();
-  await seedBlogCategories();
-  await seedBlogs();
-  await seedComments();
-  await seedCmsPages();
-  await seedContentBlocks();
-  await seedSiteSettings();
-  await seedSeos();
-  await seedMedia();
-  await seedContactMessages();
+  await defaultPrisma.$transaction(
+    async (tx) => {
+      seedDb = tx;
+      await seedRoles();
+      await seedUsers();
+      await seedProductCategories();
+      await seedProducts();
+      await seedProductCategoryLinks();
+      await seedPackages();
+      await seedSpecifications();
+      await seedProductSpecifications();
+      await seedTagCategories();
+      await seedTags();
+      await seedProductTags();
+      await seedBlogCategories();
+      await seedBlogs();
+      await seedComments();
+      await seedCmsPages();
+      await seedContentBlocks();
+      await seedSiteSettings();
+      await seedSeos();
+      await seedMedia();
+      await seedContactMessages();
+    },
+    { timeout: 300_000 },
+  );
+  seedDb = defaultPrisma;
   restoreUploadFiles();
 
   const adminPhone =
@@ -742,5 +811,5 @@ main()
     process.exit(1);
   })
   .finally(async () => {
-    await prisma.$disconnect();
+    await defaultPrisma.$disconnect();
   });

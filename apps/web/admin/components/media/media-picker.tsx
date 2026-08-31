@@ -7,7 +7,7 @@ import type { ListResponse } from "@agrohome/shared";
 import { apiGet, apiRequest, ApiError, unwrap, unwrapList } from "@/lib/api";
 import { mediaUrl } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FormField } from "@/components/ui/form-field";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
 import { CardGridSkeleton } from "@/components/ui/skeletons";
@@ -175,8 +175,7 @@ export function MediaPicker({
 
         {showUpload ? (
           <div className="space-y-3 rounded-[var(--admin-radius)] border border-dashed border-[var(--admin-border)] bg-[var(--admin-bg-elevated)]/40 p-3">
-            <div className="space-y-2">
-              <Label htmlFor="media-picker-file">فایل</Label>
+            <FormField label="فایل" htmlFor="media-picker-file">
               <Input
                 id="media-picker-file"
                 ref={fileRef}
@@ -184,16 +183,15 @@ export function MediaPicker({
                 accept="image/*,video/*,application/pdf"
                 onChange={(e) => setFile(e.target.files?.[0] || null)}
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="media-picker-alt">متن جایگزین (alt)</Label>
+            </FormField>
+            <FormField label="متن جایگزین (alt)" htmlFor="media-picker-alt">
               <Input
                 id="media-picker-alt"
                 value={alt}
                 onChange={(e) => setAlt(e.target.value)}
                 placeholder="توصیف تصویر برای دسترس‌پذیری"
               />
-            </div>
+            </FormField>
             <div className="flex flex-wrap justify-end gap-2">
               <Button
                 type="button"
@@ -217,8 +215,7 @@ export function MediaPicker({
           </div>
         ) : null}
 
-        <div className="space-y-2">
-          <Label htmlFor="media-picker-search">جستجو</Label>
+        <FormField label="جستجو" htmlFor="media-picker-search">
           <div className="relative">
             <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--admin-muted)]" />
             <Input
@@ -229,7 +226,7 @@ export function MediaPicker({
               className="ps-9"
             />
           </div>
-        </div>
+        </FormField>
 
         {loading ? (
           <CardGridSkeleton count={8} />

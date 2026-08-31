@@ -275,6 +275,7 @@ export const BLOCK_TYPES: CmsBlockDefinition[] = [
       limit: 12,
       title: "نظرات و رضایت مشتریان از محصولات ما",
       targetType: "product",
+      showOnHome: true,
       variant: "comment_slider",
     },
     slots: [{ id: "title", label: "عنوان", path: "title", kind: "textarea" }],

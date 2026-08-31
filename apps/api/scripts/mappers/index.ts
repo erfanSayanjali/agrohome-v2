@@ -209,6 +209,7 @@ export function mapComment(item: Record<string, unknown>) {
     website: asOptionalString(item.website),
     rating: item.rating == null ? null : asNumber(item.rating),
     publish: asBoolean(item.publish, false),
+    showOnHome: asBoolean(item.showOnHome, false),
     targetType:
       targetType === 'blog' || targetType === 'comment' ? targetType : 'product',
     targetLegacyId,

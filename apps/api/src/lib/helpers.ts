@@ -10,6 +10,9 @@ export function isIranMobile(phone: string): boolean {
   return /^09\d{9}$/.test(phone);
 }
 
+const MAX_PAGE = 500;
+const MAX_BLOCKS_RESOLVE = 32;
+
 export type ListQuery = {
   page: number;
   limit: number;
@@ -33,7 +36,7 @@ export function parseListQuery(
   const fields = typeof query.fields === "string" ? query.fields : "";
   const fieldsMetaOnly = fields === "meta" || query.metaOnly === "1" || query.metaOnly === true;
 
-  const page = Math.max(1, Number(query.page) || 1);
+  const page = Math.min(MAX_PAGE, Math.max(1, Number(query.page) || 1));
   const rawLimit = Number(query.limit);
   // limit=0 means meta-only (no rows)
   let limit: number;
@@ -81,12 +84,57 @@ export function parseListQuery(
   };
 }
 
+/** Strip filter keys that must not be overridden on public endpoints. */
+export function stripFilterKeys(
+  filters: Record<string, unknown>,
+  protectedKeys: string[]
+): Record<string, unknown> {
+  const safe = { ...filters };
+  for (const key of protectedKeys) delete safe[key];
+  return safe;
+}
+
+export function mergeProtectedWhere(
+  protectedFields: Record<string, unknown>,
+  userFilters: Record<string, unknown>
+): Record<string, unknown> {
+  const protectedKeys = Object.keys(protectedFields);
+  return { ...stripFilterKeys(userFilters, protectedKeys), ...protectedFields };
+}
+
+export function pickPublicFilters(
+  filters: Record<string, unknown>,
+  allowedKeys: string[]
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const key of allowedKeys) {
+    if (!(key in filters)) continue;
+    const value = filters[key];
+    if (value === null || value === undefined) continue;
+    if (typeof value === "object") continue;
+    out[key] = value;
+  }
+  return out;
+}
+
 export function prismaOrderBy(sort: string): Record<string, "asc" | "desc"> {
   if (sort.startsWith("-")) {
     return { [sort.slice(1)]: "desc" };
   }
   return { [sort]: "asc" };
 }
+
+export function prismaOrderByAllowed(
+  sort: string,
+  allowed: string[],
+  fallback = "-createdAt"
+): Record<string, "asc" | "desc"> {
+  const field = sort.startsWith("-") ? sort.slice(1) : sort;
+  const safe = allowed.includes(field) ? sort : fallback;
+  return prismaOrderBy(safe);
+}
+
+export const MAX_BLOCKS_RESOLVE_COUNT = MAX_BLOCKS_RESOLVE;
 
 export function listMeta(page: number, limit: number, total: number): ListMeta {
   const effectiveLimit = limit > 0 ? limit : 1;
